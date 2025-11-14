@@ -8,51 +8,51 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* UPEA Blue Palette - Light Mode */
-    --background: 210 100% 97%; /* #f0f8ff */
-    --foreground: 204 93% 15%; /* #031526 */
+    /* New Color Palette - Light Mode */
+    --background: 213 33% 97%; /* #f5f7fa */
+    --foreground: 213 27% 16%; /* #1e2733 */
 
     --card: 0 0% 100%;
-    --card-foreground: 204 93% 15%;
+    --card-foreground: 213 27% 16%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 204 93% 15%;
+    --popover-foreground: 213 27% 16%;
 
-    --primary: 199 95% 48%; /* #0794f0 */
+    --primary: 213 30% 48%; /* #577aa0 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 207 64% 51%; /* #32aefe */
+    --secondary: 213 31% 39%; /* #446285 */
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 100% 93%; /* #dfefff */
-    --muted-foreground: 207 48% 40%;
+    --muted: 213 32% 93%; /* #eaeef4 */
+    --muted-foreground: 213 32% 32%;
 
-    --accent: 205 66% 52%; /* #79c9ff */
-    --accent-foreground: 204 93% 15%;
+    --accent: 213 29% 60%; /* #7897b8 */
+    --accent-foreground: 213 27% 16%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 100% 88%; /* #b8e1ff */
-    --input: 210 100% 88%;
-    --ring: 199 95% 48%;
+    --border: 213 35% 85%; /* #d0dae7 */
+    --input: 213 35% 85%;
+    --ring: 213 30% 48%;
 
     --radius: 0.75rem;
     
-    /* Custom UPEA tokens */
-    --upea-dark: 207 57% 29%; /* #034f89 */
-    --upea-darker: 207 61% 27%; /* #031526 */
-    --upea-light: 207 100% 90%; /* #b8e1ff */
-    --upea-lighter: 210 100% 93%; /* #dfefff */
+    /* Custom palette tokens */
+    --upea-dark: 213 32% 32%; /* #38506c */
+    --upea-darker: 213 30% 27%; /* #31445b */
+    --upea-light: 213 30% 73%; /* #a7bbd2 */
+    --upea-lighter: 213 35% 85%; /* #d0dae7 */
     
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(199 95% 48%), hsl(207 64% 51%));
-    --gradient-hero: linear-gradient(180deg, hsl(210 100% 97%), hsl(210 100% 93%));
+    --gradient-primary: linear-gradient(135deg, hsl(213 30% 48%), hsl(213 31% 39%));
+    --gradient-hero: linear-gradient(180deg, hsl(213 33% 97%), hsl(213 32% 93%));
     
     /* Shadows */
-    --shadow-soft: 0 2px 8px -2px hsl(199 95% 48% / 0.1);
-    --shadow-medium: 0 4px 16px -4px hsl(199 95% 48% / 0.15);
-    --shadow-strong: 0 8px 24px -8px hsl(199 95% 48% / 0.2);
+    --shadow-soft: 0 2px 8px -2px hsl(213 30% 48% / 0.1);
+    --shadow-medium: 0 4px 16px -4px hsl(213 30% 48% / 0.15);
+    --shadow-strong: 0 8px 24px -8px hsl(213 30% 48% / 0.2);
     
     /* Transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -77,34 +77,34 @@ All colors MUST be HSL.
   }
 
   .dark {
-    /* UPEA Blue Palette - Dark Mode */
-    --background: 204 93% 15%; /* #031526 */
-    --foreground: 210 100% 97%;
+    /* New Color Palette - Dark Mode */
+    --background: 213 27% 16%; /* #1e2733 */
+    --foreground: 213 33% 97%;
 
-    --card: 207 48% 22%; /* #094271 */
-    --card-foreground: 210 100% 97%;
+    --card: 213 26% 24%; /* #2d3b4d */
+    --card-foreground: 213 33% 97%;
 
-    --popover: 207 48% 22%;
-    --popover-foreground: 210 100% 97%;
+    --popover: 213 26% 24%;
+    --popover-foreground: 213 33% 97%;
 
-    --primary: 199 95% 48%; /* #0794f0 */
+    --primary: 213 30% 48%; /* #577aa0 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 207 57% 29%; /* #034f89 */
-    --secondary-foreground: 210 100% 97%;
+    --secondary: 213 32% 32%; /* #38506c */
+    --secondary-foreground: 213 33% 97%;
 
-    --muted: 207 48% 22%;
-    --muted-foreground: 210 100% 88%;
+    --muted: 213 26% 24%;
+    --muted-foreground: 213 35% 85%;
 
-    --accent: 207 64% 51%; /* #32aefe */
+    --accent: 213 29% 60%; /* #7897b8 */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 213 33% 97%;
 
-    --border: 207 57% 29%;
-    --input: 207 57% 29%;
-    --ring: 199 95% 48%;
+    --border: 213 32% 32%;
+    --input: 213 32% 32%;
+    --ring: 213 30% 48%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
