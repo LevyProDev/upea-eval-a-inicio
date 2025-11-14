@@ -47,6 +47,12 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        upea: {
+          dark: "hsl(var(--upea-dark))",
+          darker: "hsl(var(--upea-darker))",
+          light: "hsl(var(--upea-light))",
+          lighter: "hsl(var(--upea-lighter))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
