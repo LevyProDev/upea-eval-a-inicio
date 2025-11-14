@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { CreditCard, Mail, Phone, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import PhoneVerificationStep from "./PhoneVerificationStep";
 
 interface RegisterModalProps {
   open: boolean;
@@ -18,6 +19,7 @@ interface RegisterModalProps {
 }
 
 const RegisterModal = ({ open, onOpenChange }: RegisterModalProps) => {
+  const [currentStep, setCurrentStep] = useState(0);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { toast } = useToast();
 
@@ -31,120 +33,133 @@ const RegisterModal = ({ open, onOpenChange }: RegisterModalProps) => {
       return;
     }
     
-    // Aquí avanzará al siguiente paso del flujo
-    console.log("Avanzando al siguiente paso...");
+    setCurrentStep(1);
+  };
+
+  const handleNextStep = () => {
+    setCurrentStep((prev) => prev + 1);
+  };
+
+  const handlePreviousStep = () => {
+    setCurrentStep((prev) => prev - 1);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">
-            Formulario de registro
-          </DialogTitle>
-          <DialogDescription className="text-base pt-2">
-            Antes de empezar, debes contar con los siguientes requisitos:
-          </DialogDescription>
-        </DialogHeader>
+        {currentStep === 0 ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold">
+                Formulario de registro
+              </DialogTitle>
+              <DialogDescription className="text-base pt-2">
+                Antes de empezar, debes contar con los siguientes requisitos:
+              </DialogDescription>
+            </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* Lista de requisitos */}
-          <div className="space-y-4">
-            {/* Requisito 1 */}
-            <div className="flex gap-4 p-4 rounded-lg border border-border bg-muted/30">
-              <div className="flex-shrink-0">
-                <div className="rounded-lg bg-primary/10 p-3">
-                  <CreditCard className="h-5 w-5 text-primary" />
+            <div className="space-y-6 py-4">
+              {/* Lista de requisitos */}
+              <div className="space-y-4">
+                {/* Requisito 1 */}
+                <div className="flex gap-4 p-4 rounded-lg border border-border bg-muted/30">
+                  <div className="flex-shrink-0">
+                    <div className="rounded-lg bg-primary/10 p-3">
+                      <CreditCard className="h-5 w-5 text-primary" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-foreground mb-1">
+                      Carnet de identidad o Pasaporte vigente
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Debe ser tu carnet o pasaporte
+                    </p>
+                  </div>
+                </div>
+
+                {/* Requisito 2 */}
+                <div className="flex gap-4 p-4 rounded-lg border border-border bg-muted/30">
+                  <div className="flex-shrink-0">
+                    <div className="rounded-lg bg-secondary/10 p-3">
+                      <Mail className="h-5 w-5 text-secondary" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-foreground mb-1">
+                      Correo electrónico
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Enviaremos un correo de confirmación
+                    </p>
+                  </div>
+                </div>
+
+                {/* Requisito 3 */}
+                <div className="flex gap-4 p-4 rounded-lg border border-border bg-muted/30">
+                  <div className="flex-shrink-0">
+                    <div className="rounded-lg bg-accent/10 p-3">
+                      <Phone className="h-5 w-5 text-accent" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-foreground mb-1">
+                      Número de celular boliviano o extranjero
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Enviaremos un SMS de confirmación si el número es boliviano
+                    </p>
+                  </div>
+                </div>
+
+                {/* Requisito 4 */}
+                <div className="flex gap-4 p-4 rounded-lg border border-border bg-muted/30">
+                  <div className="flex-shrink-0">
+                    <div className="rounded-lg bg-primary/10 p-3">
+                      <Camera className="h-5 w-5 text-primary" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-foreground mb-1">
+                      Cámara
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Para subir fotografía de tu carnet o pasaporte
+                    </p>
+                  </div>
                 </div>
               </div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-foreground mb-1">
-                  Carnet de identidad o Pasaporte vigente
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  Debe ser tu carnet o pasaporte
-                </p>
+
+              {/* Checkbox de términos y condiciones */}
+              <div className="flex items-start gap-3 p-4 rounded-lg border border-border bg-card">
+                <Checkbox
+                  id="terms"
+                  checked={acceptedTerms}
+                  onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                  className="mt-1"
+                />
+                <Label
+                  htmlFor="terms"
+                  className="text-sm font-medium leading-relaxed cursor-pointer"
+                >
+                  He leído y acepto los términos y condiciones
+                </Label>
               </div>
+
+              {/* Botón de acción */}
+              <Button
+                onClick={handleStartRegistration}
+                disabled={!acceptedTerms}
+                size="lg"
+                className="w-full"
+              >
+                Empezar
+              </Button>
             </div>
-
-            {/* Requisito 2 */}
-            <div className="flex gap-4 p-4 rounded-lg border border-border bg-muted/30">
-              <div className="flex-shrink-0">
-                <div className="rounded-lg bg-secondary/10 p-3">
-                  <Mail className="h-5 w-5 text-secondary" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-foreground mb-1">
-                  Correo electrónico
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  Enviaremos un correo de confirmación
-                </p>
-              </div>
-            </div>
-
-            {/* Requisito 3 */}
-            <div className="flex gap-4 p-4 rounded-lg border border-border bg-muted/30">
-              <div className="flex-shrink-0">
-                <div className="rounded-lg bg-accent/10 p-3">
-                  <Phone className="h-5 w-5 text-accent" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-foreground mb-1">
-                  Número de celular boliviano o extranjero
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  Enviaremos un SMS de confirmación si el número es boliviano
-                </p>
-              </div>
-            </div>
-
-            {/* Requisito 4 */}
-            <div className="flex gap-4 p-4 rounded-lg border border-border bg-muted/30">
-              <div className="flex-shrink-0">
-                <div className="rounded-lg bg-primary/10 p-3">
-                  <Camera className="h-5 w-5 text-primary" />
-                </div>
-              </div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-foreground mb-1">
-                  Cámara
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  Para subir fotografía de tu carnet o pasaporte
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Checkbox de términos y condiciones */}
-          <div className="flex items-start gap-3 p-4 rounded-lg border border-border bg-card">
-            <Checkbox
-              id="terms"
-              checked={acceptedTerms}
-              onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
-              className="mt-1"
-            />
-            <Label
-              htmlFor="terms"
-              className="text-sm font-medium leading-relaxed cursor-pointer"
-            >
-              He leído y acepto los términos y condiciones
-            </Label>
-          </div>
-
-          {/* Botón de acción */}
-          <Button
-            onClick={handleStartRegistration}
-            disabled={!acceptedTerms}
-            size="lg"
-            className="w-full"
-          >
-            Empezar
-          </Button>
-        </div>
+          </>
+        ) : currentStep === 1 ? (
+          <PhoneVerificationStep onNext={handleNextStep} onBack={handlePreviousStep} />
+        ) : null}
       </DialogContent>
     </Dialog>
   );
