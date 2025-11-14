@@ -1,7 +1,11 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { GraduationCap, LogIn, UserPlus } from "lucide-react";
+import RegisterModal from "@/components/RegisterModal";
 
 const Index = () => {
+  const [registerModalOpen, setRegisterModalOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted">
       {/* Header */}
@@ -62,12 +66,18 @@ const Index = () => {
               size="lg" 
               variant="outline"
               className="w-full sm:w-auto"
+              onClick={() => setRegisterModalOpen(true)}
             >
               <UserPlus className="mr-2 h-5 w-5" />
               Regístrate aquí
             </Button>
           </div>
 
+          {/* Modal de registro */}
+          <RegisterModal 
+            open={registerModalOpen} 
+            onOpenChange={setRegisterModalOpen} 
+          />
           {/* Info Cards */}
           <div className="mt-20 grid gap-6 md:grid-cols-3">
             <div className="rounded-xl border border-border bg-card p-6 shadow-[var(--shadow-soft)] transition-all hover:shadow-[var(--shadow-medium)]">
