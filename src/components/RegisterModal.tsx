@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import PhoneVerificationStep from "./PhoneVerificationStep";
 import PhoneCodeVerificationStep from "./PhoneCodeVerificationStep";
 import EmailVerificationStep from "./EmailVerificationStep";
+import EmailCodeVerificationStep from "./EmailCodeVerificationStep";
 
 interface RegisterModalProps {
   open: boolean;
@@ -178,6 +179,12 @@ const RegisterModal = ({ open, onOpenChange }: RegisterModalProps) => {
           <EmailVerificationStep
             onNext={handleNextStep}
             onBack={handlePreviousStep}
+          />
+        ) : currentStep === 4 ? (
+          <EmailCodeVerificationStep
+            onNext={handleNextStep}
+            onBack={handlePreviousStep}
+            email={email}
           />
         ) : null}
       </DialogContent>
