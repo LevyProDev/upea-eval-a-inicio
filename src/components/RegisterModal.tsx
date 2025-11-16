@@ -13,6 +13,7 @@ import { CreditCard, Mail, Phone, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import PhoneVerificationStep from "./PhoneVerificationStep";
 import PhoneCodeVerificationStep from "./PhoneCodeVerificationStep";
+import EmailVerificationStep from "./EmailVerificationStep";
 
 interface RegisterModalProps {
   open: boolean;
@@ -23,6 +24,7 @@ const RegisterModal = ({ open, onOpenChange }: RegisterModalProps) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [email, setEmail] = useState("");
   const { toast } = useToast();
 
   const handleStartRegistration = () => {
@@ -38,9 +40,11 @@ const RegisterModal = ({ open, onOpenChange }: RegisterModalProps) => {
     setCurrentStep(1);
   };
 
-  const handleNextStep = (phone?: string) => {
-    if (phone) {
-      setPhoneNumber(phone);
+  const handleNextStep = (data?: string) => {
+    if (currentStep === 1) {
+      setPhoneNumber(data || "");
+    } else if (currentStep === 3) {
+      setEmail(data || "");
     }
     setCurrentStep((prev) => prev + 1);
   };
@@ -169,6 +173,11 @@ const RegisterModal = ({ open, onOpenChange }: RegisterModalProps) => {
             onNext={handleNextStep}
             onBack={handlePreviousStep}
             phoneNumber={phoneNumber}
+          />
+        ) : currentStep === 3 ? (
+          <EmailVerificationStep
+            onNext={handleNextStep}
+            onBack={handlePreviousStep}
           />
         ) : null}
       </DialogContent>
