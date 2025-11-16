@@ -13,7 +13,7 @@ import { Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface PhoneVerificationStepProps {
-  onNext: () => void;
+  onNext: (phone: string) => void;
   onBack: () => void;
 }
 
@@ -47,11 +47,12 @@ const PhoneVerificationStep = ({ onNext, onBack }: PhoneVerificationStepProps) =
 
   const handleContinue = () => {
     if (validatePhoneNumber(phoneNumber, countryCode)) {
+      const fullPhone = `${countryCode} ${phoneNumber}`;
       toast({
         title: "Número verificado",
-        description: "Continuando con el registro...",
+        description: "Enviando código de verificación...",
       });
-      onNext();
+      onNext(fullPhone);
     }
   };
 
