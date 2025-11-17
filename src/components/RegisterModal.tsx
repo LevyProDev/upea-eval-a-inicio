@@ -17,6 +17,7 @@ import EmailVerificationStep from "./EmailVerificationStep";
 import EmailCodeVerificationStep from "./EmailCodeVerificationStep";
 import PersonalDataStep from "./PersonalDataStep";
 import PasswordCreationStep from "./PasswordCreationStep";
+import DocumentUploadStep from "./DocumentUploadStep";
 
 interface RegisterModalProps {
   open: boolean;
@@ -30,6 +31,7 @@ const RegisterModal = ({ open, onOpenChange }: RegisterModalProps) => {
   const [email, setEmail] = useState("");
   const [personalData, setPersonalData] = useState<any>(null);
   const [password, setPassword] = useState("");
+  const [documents, setDocuments] = useState<any>(null);
   const { toast } = useToast();
 
   const handleStartRegistration = () => {
@@ -54,6 +56,8 @@ const RegisterModal = ({ open, onOpenChange }: RegisterModalProps) => {
       setPersonalData(data);
     } else if (currentStep === 6) {
       setPassword(data?.password || "");
+    } else if (currentStep === 7) {
+      setDocuments(data);
     }
     setCurrentStep((prev) => prev + 1);
   };
@@ -201,6 +205,11 @@ const RegisterModal = ({ open, onOpenChange }: RegisterModalProps) => {
           />
         ) : currentStep === 6 ? (
           <PasswordCreationStep
+            onNext={handleNextStep}
+            onBack={handlePreviousStep}
+          />
+        ) : currentStep === 7 ? (
+          <DocumentUploadStep
             onNext={handleNextStep}
             onBack={handlePreviousStep}
           />
