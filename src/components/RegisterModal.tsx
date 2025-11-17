@@ -15,6 +15,7 @@ import PhoneVerificationStep from "./PhoneVerificationStep";
 import PhoneCodeVerificationStep from "./PhoneCodeVerificationStep";
 import EmailVerificationStep from "./EmailVerificationStep";
 import EmailCodeVerificationStep from "./EmailCodeVerificationStep";
+import PersonalDataStep from "./PersonalDataStep";
 
 interface RegisterModalProps {
   open: boolean;
@@ -26,6 +27,7 @@ const RegisterModal = ({ open, onOpenChange }: RegisterModalProps) => {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [email, setEmail] = useState("");
+  const [personalData, setPersonalData] = useState<any>(null);
   const { toast } = useToast();
 
   const handleStartRegistration = () => {
@@ -41,11 +43,13 @@ const RegisterModal = ({ open, onOpenChange }: RegisterModalProps) => {
     setCurrentStep(1);
   };
 
-  const handleNextStep = (data?: string) => {
+  const handleNextStep = (data?: any) => {
     if (currentStep === 1) {
       setPhoneNumber(data || "");
     } else if (currentStep === 3) {
       setEmail(data || "");
+    } else if (currentStep === 5) {
+      setPersonalData(data);
     }
     setCurrentStep((prev) => prev + 1);
   };
@@ -185,6 +189,11 @@ const RegisterModal = ({ open, onOpenChange }: RegisterModalProps) => {
             onNext={handleNextStep}
             onBack={handlePreviousStep}
             email={email}
+          />
+        ) : currentStep === 5 ? (
+          <PersonalDataStep
+            onNext={handleNextStep}
+            onBack={handlePreviousStep}
           />
         ) : null}
       </DialogContent>
