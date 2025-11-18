@@ -12,6 +12,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 interface RegistrationSummaryStepProps {
   onBack: () => void;
@@ -40,6 +41,7 @@ const RegistrationSummaryStep = ({
   documents,
 }: RegistrationSummaryStepProps) => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const { toast } = useToast();
 
   const handleFinalize = () => {
     // Validar que todos los datos estén completos
@@ -51,7 +53,11 @@ const RegistrationSummaryStep = ({
       !documents?.back ||
       !documents?.selfie
     ) {
-      // En un caso real, mostrar un toast con el error
+      toast({
+        variant: "destructive",
+        title: "Datos incompletos",
+        description: "Falta completar o verificar uno o más campos. Revisa antes de continuar.",
+      });
       return;
     }
 
@@ -150,7 +156,9 @@ const RegistrationSummaryStep = ({
                 </div>
               ) : (
                 <div className="aspect-[3/2] rounded-lg border border-dashed border-border flex items-center justify-center">
-                  <p className="text-xs text-muted-foreground">Sin imagen</p>
+                  <p className="text-xs text-muted-foreground text-center px-2">
+                    Imagen no disponible. Revisa el paso anterior.
+                  </p>
                 </div>
               )}
             </div>
@@ -167,7 +175,9 @@ const RegistrationSummaryStep = ({
                 </div>
               ) : (
                 <div className="aspect-[3/2] rounded-lg border border-dashed border-border flex items-center justify-center">
-                  <p className="text-xs text-muted-foreground">Sin imagen</p>
+                  <p className="text-xs text-muted-foreground text-center px-2">
+                    Imagen no disponible. Revisa el paso anterior.
+                  </p>
                 </div>
               )}
             </div>
@@ -184,7 +194,9 @@ const RegistrationSummaryStep = ({
                 </div>
               ) : (
                 <div className="aspect-[3/2] rounded-lg border border-dashed border-border flex items-center justify-center">
-                  <p className="text-xs text-muted-foreground">Sin imagen</p>
+                  <p className="text-xs text-muted-foreground text-center px-2">
+                    Imagen no disponible. Revisa el paso anterior.
+                  </p>
                 </div>
               )}
             </div>
