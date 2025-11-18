@@ -111,7 +111,7 @@ const RegistrationSummaryStep = ({
             <div className="flex items-center gap-2">
               <p className="text-base text-foreground">{phoneNumber || "-"}</p>
               {phoneNumber && (
-                <span className="flex items-center gap-1 text-xs text-green-600">
+                <span className="flex items-center gap-1 text-xs text-primary">
                   <CheckCircle2 className="h-4 w-4" />
                   Verificado
                 </span>
@@ -124,7 +124,7 @@ const RegistrationSummaryStep = ({
             <div className="flex items-center gap-2">
               <p className="text-base text-foreground">{email || "-"}</p>
               {email && (
-                <span className="flex items-center gap-1 text-xs text-green-600">
+                <span className="flex items-center gap-1 text-xs text-primary">
                   <CheckCircle2 className="h-4 w-4" />
                   Verificado
                 </span>
@@ -213,8 +213,8 @@ const RegistrationSummaryStep = ({
       <AlertDialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
         <AlertDialogContent className="sm:max-w-[425px]">
           <AlertDialogHeader className="items-center text-center">
-            <div className="mb-4 rounded-full bg-green-100 dark:bg-green-900/20 p-3 w-fit mx-auto">
-              <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-500" />
+            <div className="mb-4 rounded-full bg-primary/10 p-3 w-fit mx-auto">
+              <CheckCircle2 className="h-8 w-8 text-primary" />
             </div>
             <AlertDialogTitle className="text-2xl">
               Registro completado con éxito
