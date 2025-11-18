@@ -58,7 +58,14 @@ const RegisterModal = ({ open, onOpenChange }: RegisterModalProps) => {
     } else if (currentStep === 6) {
       setPassword(data?.password || "");
     } else if (currentStep === 7) {
-      setDocuments(data);
+      // Convert File objects to preview URLs for display
+      if (data?.frontImage && data?.backImage && data?.selfieImage) {
+        setDocuments({
+          front: URL.createObjectURL(data.frontImage),
+          back: URL.createObjectURL(data.backImage),
+          selfie: URL.createObjectURL(data.selfieImage),
+        });
+      }
     }
     setCurrentStep((prev) => prev + 1);
   };
