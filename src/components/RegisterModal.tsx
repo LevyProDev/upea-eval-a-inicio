@@ -18,6 +18,7 @@ import EmailCodeVerificationStep from "./EmailCodeVerificationStep";
 import PersonalDataStep from "./PersonalDataStep";
 import PasswordCreationStep from "./PasswordCreationStep";
 import DocumentUploadStep from "./DocumentUploadStep";
+import RegistrationSummaryStep from "./RegistrationSummaryStep";
 
 interface RegisterModalProps {
   open: boolean;
@@ -212,6 +213,14 @@ const RegisterModal = ({ open, onOpenChange }: RegisterModalProps) => {
           <DocumentUploadStep
             onNext={handleNextStep}
             onBack={handlePreviousStep}
+          />
+        ) : currentStep === 8 ? (
+          <RegistrationSummaryStep
+            onBack={handlePreviousStep}
+            phoneNumber={phoneNumber}
+            email={email}
+            personalData={personalData}
+            documents={documents}
           />
         ) : null}
       </DialogContent>
