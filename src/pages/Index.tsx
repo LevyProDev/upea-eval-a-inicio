@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { GraduationCap, LogIn, UserPlus } from "lucide-react";
 import RegisterModal from "@/components/RegisterModal";
 
 const Index = () => {
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted">
@@ -56,8 +58,8 @@ const Index = () => {
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button 
               size="lg" 
-              variant="hero"
               className="w-full sm:w-auto"
+              onClick={() => navigate("/auth")}
             >
               <LogIn className="mr-2 h-5 w-5" />
               Iniciar sesión
