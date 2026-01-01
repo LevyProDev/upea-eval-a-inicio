@@ -278,25 +278,52 @@ export type Database = {
       }
       teachers: {
         Row: {
+          academic_degree: string | null
           created_at: string
+          department: string | null
+          document_back_url: string | null
+          document_front_url: string | null
           email: string | null
           first_name: string
           id: string
           last_name: string
+          phone_number: string | null
+          registration_completed: boolean | null
+          selfie_url: string | null
+          specialty: string | null
+          user_id: string | null
         }
         Insert: {
+          academic_degree?: string | null
           created_at?: string
+          department?: string | null
+          document_back_url?: string | null
+          document_front_url?: string | null
           email?: string | null
           first_name: string
           id?: string
           last_name: string
+          phone_number?: string | null
+          registration_completed?: boolean | null
+          selfie_url?: string | null
+          specialty?: string | null
+          user_id?: string | null
         }
         Update: {
+          academic_degree?: string | null
           created_at?: string
+          department?: string | null
+          document_back_url?: string | null
+          document_front_url?: string | null
           email?: string | null
           first_name?: string
           id?: string
           last_name?: string
+          phone_number?: string | null
+          registration_completed?: boolean | null
+          selfie_url?: string | null
+          specialty?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -335,7 +362,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "student"
+      app_role: "admin" | "moderator" | "student" | "teacher"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -463,7 +490,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "student"],
+      app_role: ["admin", "moderator", "student", "teacher"],
     },
   },
 } as const
