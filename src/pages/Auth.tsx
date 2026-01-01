@@ -9,8 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { GraduationCap, Loader2 } from "lucide-react";
+import { GraduationCap, Loader2, User, BookOpen } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Correo electrónico inválido"),
@@ -21,6 +23,7 @@ const signupSchema = z.object({
   email: z.string().email("Correo electrónico inválido"),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
   confirmPassword: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+  userType: z.enum(["student", "teacher"]),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Las contraseñas no coinciden",
   path: ["confirmPassword"],
@@ -38,6 +41,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (!loading && user) {
+      // Check user role and redirect accordingly
       navigate("/dashboard");
     }
   }, [user, loading, navigate]);
@@ -56,6 +60,7 @@ const Auth = () => {
       email: "",
       password: "",
       confirmPassword: "",
+      userType: "student",
     },
   });
 
@@ -101,8 +106,18 @@ const Auth = () => {
         title: "Registro exitoso",
         description: "Tu cuenta ha sido creada. Puedes iniciar sesión.",
       });
-      setActiveTab("login");
-      signupForm.reset();
+      
+      // Redirect based on user type
+      if (data.userType === "teacher") {
+        // Sign in the user and redirect to teacher dashboard
+        const { error: signInError } = await signIn(data.email, data.password);
+        if (!signInError) {
+          navigate("/teacher-dashboard");
+        }
+      } else {
+        setActiveTab("login");
+        signupForm.reset();
+      }
     }
   };
 
@@ -192,11 +207,69 @@ const Auth = () => {
                   </Button>
                 </form>
               </Form>
+
+              {/* Demo credentials */}
+              <div className="mt-6 p-4 rounded-lg bg-muted/50 border">
+                <p className="text-xs font-medium text-muted-foreground mb-2">
+                  Credenciales de prueba:
+                </p>
+                <div className="space-y-1 text-xs">
+                  <p><span className="font-medium">Docente:</span> docente@upea.edu.bo / docente123</p>
+                  <p><span className="font-medium">Estudiante:</span> estudiante@upea.edu.bo / estudiante123</p>
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="signup">
               <Form {...signupForm}>
                 <form onSubmit={signupForm.handleSubmit(handleSignup)} className="space-y-4">
+                  <FormField
+                    control={signupForm.control}
+                    name="userType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de usuario</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="grid grid-cols-2 gap-4"
+                          >
+                            <div>
+                              <RadioGroupItem
+                                value="student"
+                                id="student"
+                                className="peer sr-only"
+                              />
+                              <Label
+                                htmlFor="student"
+                                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                              >
+                                <User className="mb-2 h-6 w-6" />
+                                <span className="text-sm font-medium">Estudiante</span>
+                              </Label>
+                            </div>
+                            <div>
+                              <RadioGroupItem
+                                value="teacher"
+                                id="teacher"
+                                className="peer sr-only"
+                              />
+                              <Label
+                                htmlFor="teacher"
+                                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                              >
+                                <BookOpen className="mb-2 h-6 w-6" />
+                                <span className="text-sm font-medium">Docente</span>
+                              </Label>
+                            </div>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <FormField
                     control={signupForm.control}
                     name="email"
