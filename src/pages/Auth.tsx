@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { GraduationCap, Loader2, User, BookOpen } from "lucide-react";
+import { GraduationCap, Loader2, User, BookOpen, Shield } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Correo electrónico inválido"),
@@ -23,7 +23,7 @@ const signupSchema = z.object({
   email: z.string().email("Correo electrónico inválido"),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
   confirmPassword: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
-  userType: z.enum(["student", "teacher"]),
+  userType: z.enum(["student", "teacher", "admin"]),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Las contraseñas no coinciden",
   path: ["confirmPassword"],
@@ -108,15 +108,15 @@ const Auth = () => {
       });
       
       // Redirect based on user type
-      if (data.userType === "teacher") {
-        // Sign in the user and redirect to teacher dashboard
-        const { error: signInError } = await signIn(data.email, data.password);
-        if (!signInError) {
+      const { error: signInError } = await signIn(data.email, data.password);
+      if (!signInError) {
+        if (data.userType === "teacher") {
           navigate("/teacher-dashboard");
+        } else if (data.userType === "admin") {
+          navigate("/admin-dashboard");
+        } else {
+          navigate("/dashboard");
         }
-      } else {
-        setActiveTab("login");
-        signupForm.reset();
       }
     }
   };
@@ -233,7 +233,7 @@ const Auth = () => {
                           <RadioGroup
                             onValueChange={field.onChange}
                             defaultValue={field.value}
-                            className="grid grid-cols-2 gap-4"
+                            className="grid grid-cols-3 gap-3"
                           >
                             <div>
                               <RadioGroupItem
@@ -243,10 +243,10 @@ const Auth = () => {
                               />
                               <Label
                                 htmlFor="student"
-                                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                               >
-                                <User className="mb-2 h-6 w-6" />
-                                <span className="text-sm font-medium">Estudiante</span>
+                                <User className="mb-1 h-5 w-5" />
+                                <span className="text-xs font-medium">Estudiante</span>
                               </Label>
                             </div>
                             <div>
@@ -257,10 +257,24 @@ const Auth = () => {
                               />
                               <Label
                                 htmlFor="teacher"
-                                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
                               >
-                                <BookOpen className="mb-2 h-6 w-6" />
-                                <span className="text-sm font-medium">Docente</span>
+                                <BookOpen className="mb-1 h-5 w-5" />
+                                <span className="text-xs font-medium">Docente</span>
+                              </Label>
+                            </div>
+                            <div>
+                              <RadioGroupItem
+                                value="admin"
+                                id="admin"
+                                className="peer sr-only"
+                              />
+                              <Label
+                                htmlFor="admin"
+                                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                              >
+                                <Shield className="mb-1 h-5 w-5" />
+                                <span className="text-xs font-medium">Admin</span>
                               </Label>
                             </div>
                           </RadioGroup>
