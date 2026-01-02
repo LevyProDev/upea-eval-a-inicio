@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_profiles: {
+        Row: {
+          administrative_position: string
+          created_at: string
+          department: string
+          document_back_url: string | null
+          document_front_url: string | null
+          document_number: string
+          document_type: string
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          phone_number: string | null
+          registration_completed: boolean | null
+          selfie_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          administrative_position: string
+          created_at?: string
+          department: string
+          document_back_url?: string | null
+          document_front_url?: string | null
+          document_number: string
+          document_type?: string
+          email: string
+          first_name: string
+          id?: string
+          last_name: string
+          phone_number?: string | null
+          registration_completed?: boolean | null
+          selfie_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          administrative_position?: string
+          created_at?: string
+          department?: string
+          document_back_url?: string | null
+          document_front_url?: string | null
+          document_number?: string
+          document_type?: string
+          email?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          phone_number?: string | null
+          registration_completed?: boolean | null
+          selfie_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       careers: {
         Row: {
           code: string
