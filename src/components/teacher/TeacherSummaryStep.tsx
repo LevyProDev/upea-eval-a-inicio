@@ -83,7 +83,7 @@ const TeacherSummaryStep = ({
   const handleSuccessClose = () => {
     setShowSuccessModal(false);
     onSuccess();
-    navigate("/teacher-dashboard");
+    navigate("/docente");
   };
 
   const summaryItems = [
