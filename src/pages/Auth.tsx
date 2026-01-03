@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,6 +33,19 @@ const signupSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 type SignupFormData = z.infer<typeof signupSchema>;
 
+// Helper function to get redirect path based on role
+const getRedirectPathByRole = (role: string): string => {
+  switch (role) {
+    case "admin":
+      return "/admin";
+    case "teacher":
+      return "/docente";
+    case "student":
+    default:
+      return "/panel";
+  }
+};
+
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
@@ -39,12 +53,32 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Function to fetch user role and redirect
+  const redirectByRole = useCallback(async (userId: string) => {
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+
+    if (roles && roles.length > 0) {
+      // Priority: admin > teacher > student
+      if (roles.some(r => r.role === "admin")) {
+        navigate("/admin");
+      } else if (roles.some(r => r.role === "teacher")) {
+        navigate("/docente");
+      } else {
+        navigate("/panel");
+      }
+    } else {
+      navigate("/panel");
+    }
+  }, [navigate]);
+
   useEffect(() => {
     if (!loading && user) {
-      // Check user role and redirect accordingly
-      navigate("/dashboard");
+      redirectByRole(user.id);
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, redirectByRole]);
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -67,9 +101,9 @@ const Auth = () => {
   const handleLogin = async (data: LoginFormData) => {
     setIsLoading(true);
     const { error } = await signIn(data.email, data.password);
-    setIsLoading(false);
 
     if (error) {
+      setIsLoading(false);
       toast({
         variant: "destructive",
         title: "Error al iniciar sesión",
@@ -82,16 +116,16 @@ const Auth = () => {
         title: "Inicio de sesión exitoso",
         description: "Bienvenido al sistema",
       });
-      navigate("/dashboard");
+      // Redirection will be handled by useEffect after user state updates
     }
   };
 
   const handleSignup = async (data: SignupFormData) => {
     setIsLoading(true);
     const { error } = await signUp(data.email, data.password);
-    setIsLoading(false);
 
     if (error) {
+      setIsLoading(false);
       let message = error.message;
       if (error.message.includes("User already registered")) {
         message = "Este correo ya está registrado. Intenta iniciar sesión.";
@@ -107,16 +141,11 @@ const Auth = () => {
         description: "Tu cuenta ha sido creada. Puedes iniciar sesión.",
       });
       
-      // Redirect based on user type
+      // Sign in after signup and redirect based on user type selection
       const { error: signInError } = await signIn(data.email, data.password);
       if (!signInError) {
-        if (data.userType === "teacher") {
-          navigate("/teacher-dashboard");
-        } else if (data.userType === "admin") {
-          navigate("/admin-dashboard");
-        } else {
-          navigate("/dashboard");
-        }
+        const redirectPath = getRedirectPathByRole(data.userType);
+        navigate(redirectPath);
       }
     }
   };
@@ -214,6 +243,7 @@ const Auth = () => {
                   Credenciales de prueba:
                 </p>
                 <div className="space-y-1 text-xs">
+                  <p><span className="font-medium">Admin:</span> admin@upea.edu.bo / admin123</p>
                   <p><span className="font-medium">Docente:</span> docente@upea.edu.bo / docente123</p>
                   <p><span className="font-medium">Estudiante:</span> estudiante@upea.edu.bo / estudiante123</p>
                 </div>
