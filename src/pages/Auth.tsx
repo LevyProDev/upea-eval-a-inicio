@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { GraduationCap, Loader2, User, BookOpen, Shield } from "lucide-react";
+import { GraduationCap, Loader2, User, BookOpen, Shield, Award } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Correo electrónico inválido"),
@@ -24,7 +24,7 @@ const signupSchema = z.object({
   email: z.string().email("Correo electrónico inválido"),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
   confirmPassword: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
-  userType: z.enum(["student", "teacher", "admin"]),
+  userType: z.enum(["student", "teacher", "admin", "director"]),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Las contraseñas no coinciden",
   path: ["confirmPassword"],
@@ -38,6 +38,8 @@ const getRedirectPathByRole = (role: string): string => {
   switch (role) {
     case "admin":
       return "/admin";
+    case "director":
+      return "/director";
     case "teacher":
       return "/docente";
     case "student":
@@ -61,9 +63,11 @@ const Auth = () => {
       .eq("user_id", userId);
 
     if (roles && roles.length > 0) {
-      // Priority: admin > teacher > student
+      // Priority: admin > director > teacher > student
       if (roles.some(r => r.role === "admin")) {
         navigate("/admin");
+      } else if (roles.some(r => r.role === "director")) {
+        navigate("/director");
       } else if (roles.some(r => r.role === "teacher")) {
         navigate("/docente");
       } else {
@@ -244,6 +248,7 @@ const Auth = () => {
                 </p>
                 <div className="space-y-1 text-xs">
                   <p><span className="font-medium">Admin:</span> admin@upea.edu.bo / admin123</p>
+                  <p><span className="font-medium">Director:</span> director@upea.edu.bo / director123</p>
                   <p><span className="font-medium">Docente:</span> docente@upea.edu.bo / docente123</p>
                   <p><span className="font-medium">Estudiante:</span> estudiante@upea.edu.bo / estudiante123</p>
                 </div>
@@ -263,7 +268,7 @@ const Auth = () => {
                           <RadioGroup
                             onValueChange={field.onChange}
                             defaultValue={field.value}
-                            className="grid grid-cols-3 gap-3"
+                            className="grid grid-cols-2 gap-3"
                           >
                             <div>
                               <RadioGroupItem
@@ -291,6 +296,20 @@ const Auth = () => {
                               >
                                 <BookOpen className="mb-1 h-5 w-5" />
                                 <span className="text-xs font-medium">Docente</span>
+                              </Label>
+                            </div>
+                            <div>
+                              <RadioGroupItem
+                                value="director"
+                                id="director"
+                                className="peer sr-only"
+                              />
+                              <Label
+                                htmlFor="director"
+                                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+                              >
+                                <Award className="mb-1 h-5 w-5" />
+                                <span className="text-xs font-medium">Director</span>
                               </Label>
                             </div>
                             <div>
