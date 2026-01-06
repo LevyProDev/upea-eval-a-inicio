@@ -95,6 +95,74 @@ export type Database = {
         }
         Relationships: []
       }
+      director_profiles: {
+        Row: {
+          career_id: string | null
+          created_at: string
+          document_back_url: string | null
+          document_front_url: string | null
+          document_number: string
+          document_type: string
+          email: string
+          faculty: string | null
+          first_name: string
+          id: string
+          last_name: string
+          phone_number: string | null
+          position: string
+          registration_completed: boolean | null
+          selfie_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          career_id?: string | null
+          created_at?: string
+          document_back_url?: string | null
+          document_front_url?: string | null
+          document_number: string
+          document_type?: string
+          email: string
+          faculty?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          phone_number?: string | null
+          position?: string
+          registration_completed?: boolean | null
+          selfie_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          career_id?: string | null
+          created_at?: string
+          document_back_url?: string | null
+          document_front_url?: string | null
+          document_number?: string
+          document_type?: string
+          email?: string
+          faculty?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          phone_number?: string | null
+          position?: string
+          registration_completed?: boolean | null
+          selfie_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "director_profiles_career_id_fkey"
+            columns: ["career_id"]
+            isOneToOne: false
+            referencedRelation: "careers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_enrollments: {
         Row: {
           assignment_id: string
