@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, ChevronLeft } from "lucide-react";
@@ -42,6 +43,12 @@ const RegistrationSummaryStep = ({
 }: RegistrationSummaryStepProps) => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const handleSuccessClose = () => {
+    setShowSuccessModal(false);
+    navigate("/");
+  };
 
   const handleFinalize = () => {
     // Validar que todos los datos estén completos
@@ -237,7 +244,7 @@ const RegistrationSummaryStep = ({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <Button
-              onClick={() => setShowSuccessModal(false)}
+              onClick={handleSuccessClose}
               className="w-full"
             >
               Finalizar
