@@ -111,7 +111,7 @@ const DirectorSummaryStep = ({
   const handleSuccessClose = () => {
     setShowSuccessModal(false);
     onSuccess();
-    navigate("/director");
+    navigate("/");
   };
 
   const summaryItems = [
