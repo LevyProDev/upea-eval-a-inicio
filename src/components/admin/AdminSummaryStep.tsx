@@ -85,7 +85,7 @@ const AdminSummaryStep = ({
   const handleSuccessClose = () => {
     setShowSuccessModal(false);
     onSuccess();
-    navigate("/admin");
+    navigate("/");
   };
 
   const summaryItems = [
