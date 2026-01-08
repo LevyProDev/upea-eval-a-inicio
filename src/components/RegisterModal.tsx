@@ -35,6 +35,29 @@ const RegisterModal = ({ open, onOpenChange }: RegisterModalProps) => {
   const [documents, setDocuments] = useState<any>(null);
   const { toast } = useToast();
 
+  const resetRegistrationState = () => {
+    setCurrentStep(0);
+    setAcceptedTerms(false);
+    setPhoneNumber("");
+    setEmail("");
+    setPersonalData(null);
+    setPassword("");
+    setDocuments(null);
+  };
+
+  const handleDialogOpenChange = (nextOpen: boolean) => {
+    onOpenChange(nextOpen);
+    if (!nextOpen) {
+      resetRegistrationState();
+    }
+  };
+
+  const handleRegistrationFinish = () => {
+    // Cierra el modal principal y vuelve al inicio del flujo (pantalla principal)
+    resetRegistrationState();
+    onOpenChange(false);
+  };
+
   const handleStartRegistration = () => {
     if (!acceptedTerms) {
       toast({
@@ -44,7 +67,7 @@ const RegisterModal = ({ open, onOpenChange }: RegisterModalProps) => {
       });
       return;
     }
-    
+
     setCurrentStep(1);
   };
 
@@ -75,7 +98,7 @@ const RegisterModal = ({ open, onOpenChange }: RegisterModalProps) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         {currentStep === 0 ? (
           <>
@@ -224,6 +247,7 @@ const RegisterModal = ({ open, onOpenChange }: RegisterModalProps) => {
         ) : currentStep === 8 ? (
           <RegistrationSummaryStep
             onBack={handlePreviousStep}
+            onFinish={handleRegistrationFinish}
             phoneNumber={phoneNumber}
             email={email}
             personalData={personalData}

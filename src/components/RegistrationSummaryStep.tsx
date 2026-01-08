@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface RegistrationSummaryStepProps {
   onBack: () => void;
+  onFinish: () => void;
   phoneNumber: string;
   email: string;
   personalData: {
@@ -36,6 +37,7 @@ interface RegistrationSummaryStepProps {
 
 const RegistrationSummaryStep = ({
   onBack,
+  onFinish,
   phoneNumber,
   email,
   personalData,
@@ -47,6 +49,7 @@ const RegistrationSummaryStep = ({
 
   const handleSuccessClose = () => {
     setShowSuccessModal(false);
+    onFinish();
     navigate("/");
   };
 
