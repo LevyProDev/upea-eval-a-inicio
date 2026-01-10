@@ -14,6 +14,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { GraduationCap, Loader2, User, BookOpen, Shield, Award } from "lucide-react";
+import { validateDemoCredentials } from "@/lib/demoAuth";
 
 const loginSchema = z.object({
   email: z.string().email("Correo electrónico inválido"),
@@ -104,6 +105,22 @@ const Auth = () => {
 
   const handleLogin = async (data: LoginFormData) => {
     setIsLoading(true);
+
+    // Primero verificar si es un usuario demo (sessionStorage)
+    const demoResult = validateDemoCredentials(data.email, data.password);
+    if (demoResult.valid && demoResult.user) {
+      console.log("✅ Login demo exitoso:", demoResult.user.email);
+      toast({
+        title: "Inicio de sesión exitoso (Demo)",
+        description: `Bienvenido ${demoResult.user.profile.firstName}. Datos temporales hasta cerrar navegador.`,
+      });
+      setIsLoading(false);
+      // Los usuarios demo siempre son estudiantes
+      navigate("/panel");
+      return;
+    }
+
+    // Si no es demo, intentar con Supabase
     const { error } = await signIn(data.email, data.password);
 
     if (error) {
