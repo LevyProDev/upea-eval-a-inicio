@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, ChevronLeft, Loader2 } from "lucide-react";
+import { CheckCircle2, ChevronLeft } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import {
@@ -14,7 +14,7 @@ import {
   AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { saveDemoUser, findDemoUser, type DemoUser } from "@/lib/demoAuth";
 
 interface RegistrationSummaryStepProps {
   onBack: () => void;
@@ -47,7 +47,6 @@ const RegistrationSummaryStep = ({
   documents,
 }: RegistrationSummaryStepProps) => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -57,7 +56,7 @@ const RegistrationSummaryStep = ({
     navigate("/");
   };
 
-  const handleFinalize = async () => {
+  const handleFinalize = () => {
     // Validar que todos los datos estén completos
     if (
       !phoneNumber ||
@@ -76,77 +75,47 @@ const RegistrationSummaryStep = ({
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      // 1. Crear usuario en Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: window.location.origin,
-        },
-      });
-
-      if (authError) {
-        throw new Error(authError.message);
-      }
-
-      if (!authData.user) {
-        throw new Error("No se pudo crear el usuario");
-      }
-
-      const userId = authData.user.id;
-
-      // 2. Asignar rol "student" en user_roles
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: userId,
-          role: "student",
-        });
-
-      if (roleError) {
-        console.error("Error asignando rol:", roleError);
-        // No lanzamos error aquí ya que el usuario ya fue creado
-      }
-
-      // 3. Crear perfil de estudiante
-      const { error: profileError } = await supabase
-        .from("student_profiles")
-        .insert({
-          user_id: userId,
-          email,
-          phone_number: phoneNumber,
-          document_type: personalData.documentType,
-          document_number: personalData.documentNumber,
-          first_name: personalData.firstName,
-          last_name: `${personalData.firstLastName} ${personalData.secondLastName}`.trim(),
-          birth_date: personalData.birthDate || null,
-          phone_verified: true,
-          email_verified: true,
-          registration_completed: true,
-        });
-
-      if (profileError) {
-        console.error("Error creando perfil:", profileError);
-        // No lanzamos error aquí ya que el usuario ya fue creado
-      }
-
-      // Cerrar sesión para que el usuario inicie sesión manualmente
-      await supabase.auth.signOut();
-
-      setShowSuccessModal(true);
-    } catch (error: any) {
-      console.error("Error en registro:", error);
+    // Verificar si el email ya está registrado en sessionStorage
+    const existingUser = findDemoUser(email);
+    if (existingUser) {
       toast({
         variant: "destructive",
-        title: "Error al registrar",
-        description: error.message || "Ocurrió un error al procesar tu registro. Intenta nuevamente.",
+        title: "Usuario ya registrado",
+        description: "Este correo ya está registrado. Intenta iniciar sesión.",
       });
-    } finally {
-      setIsLoading(false);
+      return;
     }
+
+    // Guardar usuario demo en sessionStorage (temporal hasta cerrar navegador)
+    const demoUser: DemoUser = {
+      email,
+      password,
+      role: "student",
+      profile: {
+        phoneNumber,
+        firstName: personalData.firstName,
+        lastName: `${personalData.firstLastName} ${personalData.secondLastName}`.trim(),
+        documentType: personalData.documentType,
+        documentNumber: personalData.documentNumber,
+        birthDate: personalData.birthDate || null,
+        documents: {
+          front: documents.front,
+          back: documents.back,
+          selfie: documents.selfie,
+        },
+      },
+      createdAt: new Date().toISOString(),
+    };
+
+    saveDemoUser(demoUser);
+    
+    console.log("✅ Usuario demo guardado en sessionStorage:", {
+      email: demoUser.email,
+      role: demoUser.role,
+      firstName: demoUser.profile.firstName,
+    });
+
+    setShowSuccessModal(true);
   };
 
   const fullName = `${personalData?.firstName || ""} ${personalData?.firstLastName || ""} ${personalData?.secondLastName || ""}`.trim();
@@ -300,16 +269,8 @@ const RegistrationSummaryStep = ({
         <Button
           onClick={handleFinalize}
           className="flex-1"
-          disabled={isLoading}
         >
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Registrando...
-            </>
-          ) : (
-            "Finalizar registro"
-          )}
+          Finalizar registro
         </Button>
       </div>
 
