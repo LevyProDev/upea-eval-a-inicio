@@ -250,6 +250,7 @@ const RegisterModal = ({ open, onOpenChange }: RegisterModalProps) => {
             onFinish={handleRegistrationFinish}
             phoneNumber={phoneNumber}
             email={email}
+            password={password}
             personalData={personalData}
             documents={documents}
           />
