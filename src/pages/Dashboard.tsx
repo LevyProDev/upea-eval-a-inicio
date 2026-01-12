@@ -33,7 +33,7 @@ interface StudentProfile {
 }
 
 const Dashboard = () => {
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading, signOut, isDemoMode, demoUser } = useAuth();
   const { hasAccess, loading: roleLoading } = useRoleGuard({ requiredRole: "student" });
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -50,11 +50,29 @@ const Dashboard = () => {
   }>({ open: false, assignmentId: null, subjectName: "", teacherName: "" });
 
   useEffect(() => {
+    // Handle demo users - set profile from sessionStorage data
+    if (isDemoMode && demoUser) {
+      setProfile({
+        id: "demo-user",
+        first_name: demoUser.profile.firstName,
+        last_name: demoUser.profile.lastName,
+        career_name: "Carrera Demo",
+        semester: 1,
+        enrollment_number: demoUser.profile.documentNumber,
+      });
+      setLoadingProfile(false);
+      setLoadingSubjects(false);
+      // Demo users have no subjects
+      setSubjects([]);
+      return;
+    }
+
+    // Handle real Supabase users
     if (user) {
       fetchProfile();
       fetchSubjects();
     }
-  }, [user]);
+  }, [user, isDemoMode, demoUser]);
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -171,7 +189,12 @@ const Dashboard = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate("/");
+    // Use window.location for demo users to ensure full state reset
+    if (isDemoMode) {
+      window.location.href = "/";
+    } else {
+      navigate("/");
+    }
   };
 
   const handleOpenEvaluation = (subject: SubjectWithDetails) => {
@@ -202,6 +225,20 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted">
+      {/* Demo Mode Banner */}
+      {isDemoMode && (
+        <div className="bg-amber-500/10 border-b border-amber-500/30 py-2">
+          <div className="container mx-auto px-4 flex items-center justify-center gap-2">
+            <Badge variant="outline" className="bg-amber-500/20 text-amber-700 border-amber-500/30">
+              Modo Demo
+            </Badge>
+            <span className="text-xs text-amber-700">
+              Los datos se perderán al cerrar el navegador
+            </span>
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <header className="bg-card border-b border-border sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
