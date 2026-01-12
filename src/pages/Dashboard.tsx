@@ -86,7 +86,9 @@ const Dashboard = () => {
         });
       }
     } catch (error: any) {
-      console.error("Error fetching profile:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error fetching profile:", error);
+      }
     } finally {
       setLoadingProfile(false);
     }
@@ -154,7 +156,9 @@ const Dashboard = () => {
 
       setSubjects(subjectsWithDetails);
     } catch (error: any) {
-      console.error("Error fetching subjects:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error fetching subjects:", error);
+      }
       toast({
         variant: "destructive",
         title: "Error",

@@ -47,7 +47,9 @@ export const useRoleGuard = ({ requiredRole, redirectTo = "/auth" }: UseRoleGuar
           .maybeSingle();
 
         if (error) {
-          console.error("Error verifying role:", error);
+          if (import.meta.env.DEV) {
+            console.error("Error verifying role:", error);
+          }
           setHasAccess(false);
           navigate(redirectTo);
           return;
@@ -65,7 +67,9 @@ export const useRoleGuard = ({ requiredRole, redirectTo = "/auth" }: UseRoleGuar
           redirectToRoleDashboard(fetchedRole);
         }
       } catch (error) {
-        console.error("Role verification error:", error);
+        if (import.meta.env.DEV) {
+          console.error("Role verification error:", error);
+        }
         setHasAccess(false);
         navigate(redirectTo);
       } finally {

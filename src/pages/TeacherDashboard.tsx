@@ -182,7 +182,9 @@ const TeacherDashboard = () => {
       setAssignments(enrichedAssignments);
       setEvaluations(evaluationsData);
     } catch (error: any) {
-      console.error("Error fetching teacher data:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error fetching teacher data:", error);
+      }
       toast({
         variant: "destructive",
         title: "Error",

@@ -68,12 +68,13 @@ const TeacherSummaryStep = ({
 
       setShowSuccessModal(true);
     } catch (error: any) {
-      console.error("Error al registrar docente:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error al registrar docente:", error);
+      }
       toast({
         variant: "destructive",
         title: "Error al registrar",
-        description:
-          error.message || "Ocurrió un error al guardar los datos.",
+        description: "Ocurrió un error al guardar los datos. Intenta nuevamente.",
       });
     } finally {
       setIsSubmitting(false);
