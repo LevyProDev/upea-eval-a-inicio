@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -90,6 +91,7 @@ interface SubjectAssignment {
 
 const DirectorDashboard = () => {
   const { user, signOut, loading: authLoading } = useAuth();
+  const { hasAccess, loading: roleLoading } = useRoleGuard({ requiredRole: "director" });
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -101,12 +103,6 @@ const DirectorDashboard = () => {
   const [assignments, setAssignments] = useState<SubjectAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
-    }
-  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     if (user) {
@@ -244,7 +240,7 @@ const DirectorDashboard = () => {
     return (total / evaluations.length).toFixed(1);
   };
 
-  if (authLoading || loading) {
+  if (authLoading || roleLoading || loading || !hasAccess) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
