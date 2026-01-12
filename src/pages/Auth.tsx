@@ -14,7 +14,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { GraduationCap, Loader2, User, BookOpen, Shield, Award } from "lucide-react";
-import { validateDemoCredentials } from "@/lib/demoAuth";
+import { validateDemoCredentials, setDemoSession } from "@/lib/demoAuth";
 
 const loginSchema = z.object({
   email: z.string().email("Correo electrónico inválido"),
@@ -52,7 +52,7 @@ const getRedirectPathByRole = (role: string): string => {
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
-  const { signIn, signUp, user, loading } = useAuth();
+  const { signIn, signUp, user, loading, isDemoMode, demoUser } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -80,10 +80,17 @@ const Auth = () => {
   }, [navigate]);
 
   useEffect(() => {
+    // If demo user is logged in, redirect to student panel
+    if (!loading && isDemoMode && demoUser) {
+      navigate("/panel");
+      return;
+    }
+    
+    // If real Supabase user is logged in, redirect by role
     if (!loading && user) {
       redirectByRole(user.id);
     }
-  }, [user, loading, redirectByRole]);
+  }, [user, loading, redirectByRole, isDemoMode, demoUser, navigate]);
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -109,14 +116,15 @@ const Auth = () => {
     // Primero verificar si es un usuario demo (sessionStorage)
     const demoResult = validateDemoCredentials(data.email, data.password);
     if (demoResult.valid && demoResult.user) {
-      console.log("✅ Login demo exitoso:", demoResult.user.email);
+      // Guardar la sesión demo para que persista durante la navegación
+      setDemoSession(demoResult.user);
       toast({
         title: "Inicio de sesión exitoso (Demo)",
         description: `Bienvenido ${demoResult.user.profile.firstName}. Datos temporales hasta cerrar navegador.`,
       });
       setIsLoading(false);
-      // Los usuarios demo siempre son estudiantes
-      navigate("/panel");
+      // Forzar recarga para que el AuthProvider detecte la sesión demo
+      window.location.href = "/panel";
       return;
     }
 

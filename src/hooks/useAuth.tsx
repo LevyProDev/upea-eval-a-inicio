@@ -1,11 +1,15 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { getDemoSession, clearDemoSession, DemoUser } from "@/lib/demoAuth";
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  // Demo user support
+  demoUser: DemoUser | null;
+  isDemoMode: boolean;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -17,8 +21,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [demoUser, setDemoUser] = useState<DemoUser | null>(null);
 
   useEffect(() => {
+    // Check for demo session first
+    const demoSession = getDemoSession();
+    if (demoSession) {
+      setDemoUser(demoSession.user);
+      setLoading(false);
+      return;
+    }
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
@@ -60,11 +73,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // Clear demo session if exists
+    if (demoUser) {
+      clearDemoSession();
+      setDemoUser(null);
+    } else {
+      await supabase.auth.signOut();
+    }
   };
 
+  const isDemoMode = demoUser !== null;
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      loading, 
+      demoUser, 
+      isDemoMode, 
+      signUp, 
+      signIn, 
+      signOut 
+    }}>
       {children}
     </AuthContext.Provider>
   );

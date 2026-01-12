@@ -19,9 +19,10 @@ interface UseRoleGuardResult {
 /**
  * Hook to verify user role from the database and redirect if unauthorized.
  * This provides server-side role verification in addition to client-side checks.
+ * Also supports demo users stored in sessionStorage.
  */
 export const useRoleGuard = ({ requiredRole, redirectTo = "/auth" }: UseRoleGuardOptions): UseRoleGuardResult => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, demoUser, isDemoMode } = useAuth();
   const navigate = useNavigate();
   const [hasAccess, setHasAccess] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -31,6 +32,23 @@ export const useRoleGuard = ({ requiredRole, redirectTo = "/auth" }: UseRoleGuar
     const verifyRole = async () => {
       if (authLoading) return;
 
+      // Handle demo users - they are always students
+      if (isDemoMode && demoUser) {
+        const demoRole = demoUser.role; // Always "student" for demo users
+        setUserRole(demoRole);
+        
+        if (demoRole === requiredRole) {
+          setHasAccess(true);
+        } else {
+          setHasAccess(false);
+          // Redirect demo users to their appropriate dashboard
+          navigate("/panel");
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Handle real Supabase users
       if (!user) {
         setLoading(false);
         setHasAccess(false);
@@ -97,7 +115,7 @@ export const useRoleGuard = ({ requiredRole, redirectTo = "/auth" }: UseRoleGuar
     };
 
     verifyRole();
-  }, [user, authLoading, requiredRole, redirectTo, navigate]);
+  }, [user, authLoading, requiredRole, redirectTo, navigate, isDemoMode, demoUser]);
 
   return { hasAccess, loading, userRole };
 };

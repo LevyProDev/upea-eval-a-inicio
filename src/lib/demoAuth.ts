@@ -2,6 +2,7 @@
 // Data persists only until browser is closed
 
 const DEMO_USERS_KEY = "demo_registered_users";
+const DEMO_SESSION_KEY = "demo_current_session";
 
 export interface DemoUser {
   email: string;
@@ -21,6 +22,11 @@ export interface DemoUser {
     };
   };
   createdAt: string;
+}
+
+export interface DemoSession {
+  user: DemoUser;
+  loggedInAt: string;
 }
 
 export const getDemoUsers = (): DemoUser[] => {
@@ -62,4 +68,30 @@ export const validateDemoCredentials = (
 
 export const clearDemoUsers = (): void => {
   sessionStorage.removeItem(DEMO_USERS_KEY);
+};
+
+// Session management for demo users
+export const setDemoSession = (user: DemoUser): void => {
+  const session: DemoSession = {
+    user,
+    loggedInAt: new Date().toISOString(),
+  };
+  sessionStorage.setItem(DEMO_SESSION_KEY, JSON.stringify(session));
+};
+
+export const getDemoSession = (): DemoSession | null => {
+  try {
+    const data = sessionStorage.getItem(DEMO_SESSION_KEY);
+    return data ? JSON.parse(data) : null;
+  } catch {
+    return null;
+  }
+};
+
+export const clearDemoSession = (): void => {
+  sessionStorage.removeItem(DEMO_SESSION_KEY);
+};
+
+export const isDemoSessionActive = (): boolean => {
+  return getDemoSession() !== null;
 };
