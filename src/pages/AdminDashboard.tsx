@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -125,6 +126,7 @@ interface Evaluation {
 
 const AdminDashboard = () => {
   const { user, signOut, loading: authLoading } = useAuth();
+  const { hasAccess, loading: roleLoading } = useRoleGuard({ requiredRole: "admin" });
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -151,12 +153,6 @@ const AdminDashboard = () => {
   // Form states
   const [careerForm, setCareerForm] = useState({ name: "", code: "", faculty: "" });
   const [subjectForm, setSubjectForm] = useState({ name: "", code: "", semester: "", career_id: "" });
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
-    }
-  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     if (user) {
@@ -373,7 +369,7 @@ const AdminDashboard = () => {
       (t.email?.toLowerCase() || "").includes(teacherSearch.toLowerCase())
   );
 
-  if (authLoading || loading) {
+  if (authLoading || roleLoading || loading || !hasAccess) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

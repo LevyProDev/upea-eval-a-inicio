@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +34,7 @@ interface StudentProfile {
 
 const Dashboard = () => {
   const { user, loading: authLoading, signOut } = useAuth();
+  const { hasAccess, loading: roleLoading } = useRoleGuard({ requiredRole: "student" });
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -46,12 +48,6 @@ const Dashboard = () => {
     subjectName: string;
     teacherName: string;
   }>({ open: false, assignmentId: null, subjectName: "", teacherName: "" });
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
-    }
-  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     if (user) {
@@ -192,7 +188,7 @@ const Dashboard = () => {
     });
   };
 
-  if (authLoading) {
+  if (authLoading || roleLoading || !hasAccess) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
