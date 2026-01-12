@@ -208,7 +208,9 @@ const AdminDashboard = () => {
       setSubjects(subjectsRes.data || []);
       setEvaluations(evalsRes.data || []);
     } catch (error: any) {
-      console.error("Error fetching admin data:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error fetching admin data:", error);
+      }
       toast({
         variant: "destructive",
         title: "Error",

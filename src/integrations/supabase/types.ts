@@ -319,13 +319,6 @@ export type Database = {
             referencedRelation: "teachers"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "subject_assignments_teacher_id_fkey"
-            columns: ["teacher_id"]
-            isOneToOne: false
-            referencedRelation: "teachers_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       subjects: {
@@ -482,35 +475,20 @@ export type Database = {
       }
     }
     Views: {
-      teachers_public: {
-        Row: {
-          academic_degree: string | null
-          department: string | null
-          first_name: string | null
-          id: string | null
-          last_name: string | null
-          specialty: string | null
-        }
-        Insert: {
-          academic_degree?: string | null
-          department?: string | null
-          first_name?: string | null
-          id?: string | null
-          last_name?: string | null
-          specialty?: string | null
-        }
-        Update: {
-          academic_degree?: string | null
-          department?: string | null
-          first_name?: string | null
-          id?: string | null
-          last_name?: string | null
-          specialty?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
+      get_teacher_basic_info: {
+        Args: { teacher_id_param: string }
+        Returns: {
+          academic_degree: string
+          department: string
+          first_name: string
+          id: string
+          last_name: string
+          specialty: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

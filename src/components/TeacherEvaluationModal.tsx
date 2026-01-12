@@ -166,11 +166,13 @@ const TeacherEvaluationModal = ({
 
       onComplete();
     } catch (error: any) {
-      console.error("Error submitting evaluation:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error submitting evaluation:", error);
+      }
       toast({
         variant: "destructive",
         title: "Error al guardar",
-        description: error.message || "No se pudo guardar la evaluación.",
+        description: "No se pudo guardar la evaluación. Intenta nuevamente.",
       });
     } finally {
       setIsSubmitting(false);

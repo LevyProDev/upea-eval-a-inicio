@@ -218,7 +218,9 @@ const DirectorDashboard = () => {
         }
       }
     } catch (error: any) {
-      console.error("Error fetching director data:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error fetching director data:", error);
+      }
       toast({
         variant: "destructive",
         title: "Error",
