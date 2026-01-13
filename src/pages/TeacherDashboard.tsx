@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { supabase } from "@/integrations/supabase/client";
+import { getDemoRedirectPath } from "@/lib/demoAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -79,7 +80,7 @@ const EVALUATION_CRITERIA = [
 ];
 
 const TeacherDashboard = () => {
-  const { user, signOut, loading: authLoading } = useAuth();
+  const { user, signOut, loading: authLoading, isDemoMode, demoUser } = useAuth();
   const { hasAccess, loading: roleLoading } = useRoleGuard({ requiredRole: "teacher" });
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -91,10 +92,27 @@ const TeacherDashboard = () => {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
 
   useEffect(() => {
+    // Handle demo users
+    if (isDemoMode && demoUser) {
+      // Set demo profile data
+      setTeacherProfile({
+        id: "demo-teacher",
+        first_name: demoUser.profile.firstName,
+        last_name: demoUser.profile.lastName,
+        email: demoUser.email,
+        specialty: "Informática",
+        academic_degree: "Magíster",
+        department: "Departamento de Sistemas",
+        registration_completed: true,
+      });
+      setLoading(false);
+      return;
+    }
+    
     if (user) {
       fetchTeacherData();
     }
-  }, [user]);
+  }, [user, isDemoMode, demoUser]);
 
   const fetchTeacherData = async () => {
     if (!user) return;
@@ -196,6 +214,10 @@ const TeacherDashboard = () => {
   };
 
   const handleSignOut = async () => {
+    if (isDemoMode) {
+      window.location.href = "/auth";
+      return;
+    }
     await signOut();
     navigate("/auth");
   };

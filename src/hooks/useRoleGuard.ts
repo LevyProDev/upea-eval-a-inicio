@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { getDemoRedirectPath, DemoRole } from "@/lib/demoAuth";
 
 type AppRole = "admin" | "moderator" | "student" | "teacher" | "director";
 
@@ -32,17 +33,19 @@ export const useRoleGuard = ({ requiredRole, redirectTo = "/auth" }: UseRoleGuar
     const verifyRole = async () => {
       if (authLoading) return;
 
-      // Handle demo users - they are always students
+      // Handle demo users - check their actual role
       if (isDemoMode && demoUser) {
-        const demoRole = demoUser.role; // Always "student" for demo users
+        const demoRole = demoUser.role as AppRole;
         setUserRole(demoRole);
         
-        if (demoRole === requiredRole) {
+        // Check if demo user has access (exact role match or admin has all access)
+        if (demoRole === requiredRole || demoRole === "admin") {
           setHasAccess(true);
         } else {
           setHasAccess(false);
-          // Redirect demo users to their appropriate dashboard
-          navigate("/panel");
+          // Redirect demo users to their appropriate dashboard based on role
+          const redirectPath = getDemoRedirectPath(demoRole as DemoRole);
+          navigate(redirectPath);
         }
         setLoading(false);
         return;

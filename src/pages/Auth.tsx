@@ -14,7 +14,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { GraduationCap, Loader2, User, BookOpen, Shield, Award } from "lucide-react";
-import { validateDemoCredentials, setDemoSession } from "@/lib/demoAuth";
+import { validateDemoCredentials, setDemoSession, getDemoRedirectPath } from "@/lib/demoAuth";
 
 const loginSchema = z.object({
   email: z.string().email("Correo electrónico inválido"),
@@ -80,9 +80,10 @@ const Auth = () => {
   }, [navigate]);
 
   useEffect(() => {
-    // If demo user is logged in, redirect to student panel
+    // If demo user is logged in, redirect to appropriate dashboard based on role
     if (!loading && isDemoMode && demoUser) {
-      navigate("/panel");
+      const redirectPath = getDemoRedirectPath(demoUser.role);
+      navigate(redirectPath);
       return;
     }
     
@@ -113,7 +114,7 @@ const Auth = () => {
   const handleLogin = async (data: LoginFormData) => {
     setIsLoading(true);
 
-    // Primero verificar si es un usuario demo (sessionStorage)
+    // Primero verificar si es un usuario demo (predefinido o registrado)
     const demoResult = validateDemoCredentials(data.email, data.password);
     if (demoResult.valid && demoResult.user) {
       // Guardar la sesión demo para que persista durante la navegación
@@ -123,8 +124,9 @@ const Auth = () => {
         description: `Bienvenido ${demoResult.user.profile.firstName}. Datos temporales hasta cerrar navegador.`,
       });
       setIsLoading(false);
-      // Forzar recarga para que el AuthProvider detecte la sesión demo
-      window.location.href = "/panel";
+      // Redirigir al dashboard correspondiente según el rol
+      const redirectPath = getDemoRedirectPath(demoResult.user.role);
+      window.location.href = redirectPath;
       return;
     }
 
