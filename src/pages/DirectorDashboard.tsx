@@ -90,7 +90,7 @@ interface SubjectAssignment {
 }
 
 const DirectorDashboard = () => {
-  const { user, signOut, loading: authLoading } = useAuth();
+  const { user, signOut, loading: authLoading, isDemoMode, demoUser } = useAuth();
   const { hasAccess, loading: roleLoading } = useRoleGuard({ requiredRole: "director" });
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -105,10 +105,26 @@ const DirectorDashboard = () => {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
 
   useEffect(() => {
+    // Handle demo users
+    if (isDemoMode && demoUser) {
+      setDirectorProfile({
+        id: "demo-director",
+        first_name: demoUser.profile.firstName,
+        last_name: demoUser.profile.lastName,
+        email: demoUser.email,
+        career_id: null,
+        faculty: "Facultad de Ingeniería",
+        position: "Director de Carrera",
+        registration_completed: true,
+      });
+      setLoading(false);
+      return;
+    }
+    
     if (user) {
       fetchDirectorData();
     }
-  }, [user]);
+  }, [user, isDemoMode, demoUser]);
 
   const fetchDirectorData = async () => {
     if (!user) return;
@@ -232,6 +248,10 @@ const DirectorDashboard = () => {
   };
 
   const handleSignOut = async () => {
+    if (isDemoMode) {
+      window.location.href = "/auth";
+      return;
+    }
     await signOut();
     navigate("/auth");
   };

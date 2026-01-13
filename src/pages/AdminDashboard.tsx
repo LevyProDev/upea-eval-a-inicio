@@ -125,7 +125,7 @@ interface Evaluation {
 }
 
 const AdminDashboard = () => {
-  const { user, signOut, loading: authLoading } = useAuth();
+  const { user, signOut, loading: authLoading, isDemoMode, demoUser } = useAuth();
   const { hasAccess, loading: roleLoading } = useRoleGuard({ requiredRole: "admin" });
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -155,10 +155,25 @@ const AdminDashboard = () => {
   const [subjectForm, setSubjectForm] = useState({ name: "", code: "", semester: "", career_id: "" });
 
   useEffect(() => {
+    // Handle demo users
+    if (isDemoMode && demoUser) {
+      setAdminProfile({
+        id: "demo-admin",
+        first_name: demoUser.profile.firstName,
+        last_name: demoUser.profile.lastName,
+        email: demoUser.email,
+        administrative_position: "Administrador del Sistema",
+        department: "Sistemas",
+        registration_completed: true,
+      });
+      setLoading(false);
+      return;
+    }
+    
     if (user) {
       fetchAdminData();
     }
-  }, [user]);
+  }, [user, isDemoMode, demoUser]);
 
   const fetchAdminData = async () => {
     if (!user) return;
@@ -222,6 +237,10 @@ const AdminDashboard = () => {
   };
 
   const handleSignOut = async () => {
+    if (isDemoMode) {
+      window.location.href = "/auth";
+      return;
+    }
     await signOut();
     navigate("/auth");
   };

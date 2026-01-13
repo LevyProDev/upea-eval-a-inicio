@@ -4,10 +4,12 @@
 const DEMO_USERS_KEY = "demo_registered_users";
 const DEMO_SESSION_KEY = "demo_current_session";
 
+export type DemoRole = "student" | "teacher" | "admin" | "director";
+
 export interface DemoUser {
   email: string;
   password: string;
-  role: "student";
+  role: DemoRole;
   profile: {
     phoneNumber: string;
     firstName: string;
@@ -23,6 +25,77 @@ export interface DemoUser {
   };
   createdAt: string;
 }
+
+// Predefined demo users for testing all roles
+const PREDEFINED_DEMO_USERS: DemoUser[] = [
+  {
+    email: "estudiante@upea.edu.bo",
+    password: "estudiante123",
+    role: "student",
+    profile: {
+      phoneNumber: "+591 70000001",
+      firstName: "Estudiante",
+      lastName: "Demo",
+      documentType: "CI",
+      documentNumber: "12345678",
+      birthDate: "2000-01-15",
+      documents: { front: null, back: null, selfie: null },
+    },
+    createdAt: new Date().toISOString(),
+  },
+  {
+    email: "docente@upea.edu.bo",
+    password: "docente123",
+    role: "teacher",
+    profile: {
+      phoneNumber: "+591 70000002",
+      firstName: "Docente",
+      lastName: "Demo",
+      documentType: "CI",
+      documentNumber: "23456789",
+      birthDate: "1985-06-20",
+      documents: { front: null, back: null, selfie: null },
+    },
+    createdAt: new Date().toISOString(),
+  },
+  {
+    email: "admin@upea.edu.bo",
+    password: "admin123",
+    role: "admin",
+    profile: {
+      phoneNumber: "+591 70000003",
+      firstName: "Administrador",
+      lastName: "Demo",
+      documentType: "CI",
+      documentNumber: "34567890",
+      birthDate: "1980-03-10",
+      documents: { front: null, back: null, selfie: null },
+    },
+    createdAt: new Date().toISOString(),
+  },
+  {
+    email: "director@upea.edu.bo",
+    password: "director123",
+    role: "director",
+    profile: {
+      phoneNumber: "+591 70000004",
+      firstName: "Director",
+      lastName: "Demo",
+      documentType: "CI",
+      documentNumber: "45678901",
+      birthDate: "1975-11-25",
+      documents: { front: null, back: null, selfie: null },
+    },
+    createdAt: new Date().toISOString(),
+  },
+];
+
+// Find predefined demo user by credentials
+const findPredefinedDemoUser = (email: string, password: string): DemoUser | undefined => {
+  return PREDEFINED_DEMO_USERS.find(
+    (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
+  );
+};
 
 export interface DemoSession {
   user: DemoUser;
@@ -59,11 +132,34 @@ export const validateDemoCredentials = (
   email: string,
   password: string
 ): { valid: boolean; user?: DemoUser } => {
-  const user = findDemoUser(email);
-  if (user && user.password === password) {
-    return { valid: true, user };
+  // First check predefined demo users (for testing all roles)
+  const predefinedUser = findPredefinedDemoUser(email, password);
+  if (predefinedUser) {
+    return { valid: true, user: predefinedUser };
   }
+  
+  // Then check registered demo users (from 9-step registration)
+  const registeredUser = findDemoUser(email);
+  if (registeredUser && registeredUser.password === password) {
+    return { valid: true, user: registeredUser };
+  }
+  
   return { valid: false };
+};
+
+// Get redirect path based on demo user role
+export const getDemoRedirectPath = (role: DemoRole): string => {
+  switch (role) {
+    case "admin":
+      return "/admin";
+    case "director":
+      return "/director";
+    case "teacher":
+      return "/docente";
+    case "student":
+    default:
+      return "/panel";
+  }
 };
 
 export const clearDemoUsers = (): void => {
