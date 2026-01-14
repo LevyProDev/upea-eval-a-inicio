@@ -189,12 +189,8 @@ const Dashboard = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    // Use window.location for demo users to ensure full state reset
-    if (isDemoMode) {
-      window.location.href = "/";
-    } else {
-      navigate("/");
-    }
+    // Always use window.location to ensure full state reset
+    window.location.href = "/";
   };
 
   const handleOpenEvaluation = (subject: SubjectWithDetails) => {
