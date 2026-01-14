@@ -248,12 +248,9 @@ const DirectorDashboard = () => {
   };
 
   const handleSignOut = async () => {
-    if (isDemoMode) {
-      window.location.href = "/auth";
-      return;
-    }
     await signOut();
-    navigate("/auth");
+    // Always use window.location to ensure full state reset
+    window.location.href = "/";
   };
 
   const getAverageScore = () => {
