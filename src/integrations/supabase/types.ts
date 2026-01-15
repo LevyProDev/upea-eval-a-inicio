@@ -319,6 +319,13 @@ export type Database = {
             referencedRelation: "teachers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "subject_assignments_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers_for_students"
+            referencedColumns: ["id"]
+          },
         ]
       }
       subjects: {
@@ -475,7 +482,33 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      teachers_for_students: {
+        Row: {
+          academic_degree: string | null
+          department: string | null
+          first_name: string | null
+          id: string | null
+          last_name: string | null
+          specialty: string | null
+        }
+        Insert: {
+          academic_degree?: string | null
+          department?: string | null
+          first_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          specialty?: string | null
+        }
+        Update: {
+          academic_degree?: string | null
+          department?: string | null
+          first_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          specialty?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_teacher_basic_info: {
