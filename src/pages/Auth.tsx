@@ -9,11 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { GraduationCap, Loader2, User, BookOpen, Shield, Award } from "lucide-react";
+import { GraduationCap, Loader2 } from "lucide-react";
 import { validateDemoCredentials, setDemoSession, getDemoRedirectPath } from "@/lib/demoAuth";
 
 const loginSchema = z.object({
@@ -21,38 +18,11 @@ const loginSchema = z.object({
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
 });
 
-const signupSchema = z.object({
-  email: z.string().email("Correo electrónico inválido"),
-  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
-  confirmPassword: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
-  userType: z.enum(["student", "teacher", "admin", "director"]),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Las contraseñas no coinciden",
-  path: ["confirmPassword"],
-});
-
 type LoginFormData = z.infer<typeof loginSchema>;
-type SignupFormData = z.infer<typeof signupSchema>;
-
-// Helper function to get redirect path based on role
-const getRedirectPathByRole = (role: string): string => {
-  switch (role) {
-    case "admin":
-      return "/admin";
-    case "director":
-      return "/director";
-    case "teacher":
-      return "/docente";
-    case "student":
-    default:
-      return "/panel";
-  }
-};
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("login");
-  const { signIn, signUp, user, loading, isDemoMode, demoUser } = useAuth();
+  const { signIn, user, loading, isDemoMode, demoUser } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -101,16 +71,6 @@ const Auth = () => {
     },
   });
 
-  const signupForm = useForm<SignupFormData>({
-    resolver: zodResolver(signupSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      confirmPassword: "",
-      userType: "student",
-    },
-  });
-
   const handleLogin = async (data: LoginFormData) => {
     setIsLoading(true);
 
@@ -151,36 +111,6 @@ const Auth = () => {
     }
   };
 
-  const handleSignup = async (data: SignupFormData) => {
-    setIsLoading(true);
-    const { error } = await signUp(data.email, data.password);
-
-    if (error) {
-      setIsLoading(false);
-      let message = error.message;
-      if (error.message.includes("User already registered")) {
-        message = "Este correo ya está registrado. Intenta iniciar sesión.";
-      }
-      toast({
-        variant: "destructive",
-        title: "Error al registrarse",
-        description: message,
-      });
-    } else {
-      toast({
-        title: "Registro exitoso",
-        description: "Tu cuenta ha sido creada. Puedes iniciar sesión.",
-      });
-      
-      // Sign in after signup and redirect based on user type selection
-      const { error: signInError } = await signIn(data.email, data.password);
-      if (!signInError) {
-        const redirectPath = getRedirectPathByRole(data.userType);
-        navigate(redirectPath);
-      }
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -204,230 +134,77 @@ const Auth = () => {
 
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center">
-          <CardTitle className="text-xl">Acceso al Sistema</CardTitle>
+          <CardTitle className="text-xl">Iniciar Sesión</CardTitle>
           <CardDescription>
             Ingresa con tu cuenta institucional
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Iniciar Sesión</TabsTrigger>
-              <TabsTrigger value="signup">Registrarse</TabsTrigger>
-            </TabsList>
+          <Form {...loginForm}>
+            <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+              <FormField
+                control={loginForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Correo electrónico</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="correo@ejemplo.com"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <TabsContent value="login">
-              <Form {...loginForm}>
-                <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
-                  <FormField
-                    control={loginForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Correo electrónico</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="correo@ejemplo.com"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              <FormField
+                control={loginForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contraseña</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="••••••••"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                  <FormField
-                    control={loginForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contraseña</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="••••••••"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Iniciando sesión...
-                      </>
-                    ) : (
-                      "Iniciar Sesión"
-                    )}
-                  </Button>
-                </form>
-              </Form>
-
-              {/* Demo credentials */}
-              <div className="mt-6 p-4 rounded-lg bg-muted/50 border">
-                <p className="text-xs font-medium text-muted-foreground mb-2">
-                  Credenciales de prueba:
-                </p>
-                <div className="space-y-1 text-xs">
-                  <p><span className="font-medium">Admin:</span> admin@upea.edu.bo / admin123</p>
-                  <p><span className="font-medium">Director:</span> director@upea.edu.bo / director123</p>
-                  <p><span className="font-medium">Docente:</span> docente@upea.edu.bo / docente123</p>
-                  <p><span className="font-medium">Estudiante:</span> estudiante@upea.edu.bo / estudiante123</p>
-                </div>
+              <div className="flex justify-center pt-2">
+                <Button type="submit" className="w-full max-w-xs" disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Iniciando sesión...
+                    </>
+                  ) : (
+                    "Iniciar Sesión"
+                  )}
+                </Button>
               </div>
-            </TabsContent>
+            </form>
+          </Form>
 
-            <TabsContent value="signup">
-              <Form {...signupForm}>
-                <form onSubmit={signupForm.handleSubmit(handleSignup)} className="space-y-4">
-                  <FormField
-                    control={signupForm.control}
-                    name="userType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tipo de usuario</FormLabel>
-                        <FormControl>
-                          <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="grid grid-cols-2 gap-3"
-                          >
-                            <div>
-                              <RadioGroupItem
-                                value="student"
-                                id="student"
-                                className="peer sr-only"
-                              />
-                              <Label
-                                htmlFor="student"
-                                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                              >
-                                <User className="mb-1 h-5 w-5" />
-                                <span className="text-xs font-medium">Estudiante</span>
-                              </Label>
-                            </div>
-                            <div>
-                              <RadioGroupItem
-                                value="teacher"
-                                id="teacher"
-                                className="peer sr-only"
-                              />
-                              <Label
-                                htmlFor="teacher"
-                                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                              >
-                                <BookOpen className="mb-1 h-5 w-5" />
-                                <span className="text-xs font-medium">Docente</span>
-                              </Label>
-                            </div>
-                            <div>
-                              <RadioGroupItem
-                                value="director"
-                                id="director"
-                                className="peer sr-only"
-                              />
-                              <Label
-                                htmlFor="director"
-                                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                              >
-                                <Award className="mb-1 h-5 w-5" />
-                                <span className="text-xs font-medium">Director</span>
-                              </Label>
-                            </div>
-                            <div>
-                              <RadioGroupItem
-                                value="admin"
-                                id="admin"
-                                className="peer sr-only"
-                              />
-                              <Label
-                                htmlFor="admin"
-                                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                              >
-                                <Shield className="mb-1 h-5 w-5" />
-                                <span className="text-xs font-medium">Admin</span>
-                              </Label>
-                            </div>
-                          </RadioGroup>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={signupForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Correo electrónico</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="correo@ejemplo.com"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={signupForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Contraseña</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="••••••••"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={signupForm.control}
-                    name="confirmPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Confirmar contraseña</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="••••••••"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Registrando...
-                      </>
-                    ) : (
-                      "Crear Cuenta"
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            </TabsContent>
-          </Tabs>
+          {/* Demo credentials */}
+          <div className="mt-6 p-4 rounded-lg bg-muted/50 border">
+            <p className="text-xs font-medium text-muted-foreground mb-2">
+              Credenciales de prueba:
+            </p>
+            <div className="space-y-1 text-xs">
+              <p><span className="font-medium">Admin:</span> admin@upea.edu.bo / admin123</p>
+              <p><span className="font-medium">Director:</span> director@upea.edu.bo / director123</p>
+              <p><span className="font-medium">Docente:</span> docente@upea.edu.bo / docente123</p>
+              <p><span className="font-medium">Estudiante:</span> estudiante@upea.edu.bo / estudiante123</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
