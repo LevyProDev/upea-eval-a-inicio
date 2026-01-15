@@ -5,12 +5,19 @@ import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { GraduationCap, LogOut, BookOpen, CheckCircle, ClipboardList, User } from "lucide-react";
-import TeacherEvaluationModal from "@/components/TeacherEvaluationModal";
+import { GraduationCap, LogOut, BookOpen, User, Calendar, Hash } from "lucide-react";
+import SubjectCard from "@/components/student/SubjectCard";
+import EvaluationModal from "@/components/student/EvaluationModal";
+import { 
+  MOCK_STUDENT_PROFILE, 
+  MOCK_SUBJECTS, 
+  getStoredEvaluation, 
+  saveEvaluation,
+  StoredEvaluation 
+} from "@/lib/mockData";
 
 interface SubjectWithDetails {
   id: string;
@@ -42,28 +49,38 @@ const Dashboard = () => {
   const [subjects, setSubjects] = useState<SubjectWithDetails[]>([]);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingSubjects, setLoadingSubjects] = useState(true);
+  const [evaluations, setEvaluations] = useState<Record<string, StoredEvaluation>>({});
   const [evaluationModal, setEvaluationModal] = useState<{
     open: boolean;
-    assignmentId: string | null;
-    subjectName: string;
-    teacherName: string;
-  }>({ open: false, assignmentId: null, subjectName: "", teacherName: "" });
+    subject: typeof MOCK_SUBJECTS[0] | null;
+  }>({ open: false, subject: null });
+
+  // Load stored evaluations from localStorage
+  useEffect(() => {
+    const storedEvaluations: Record<string, StoredEvaluation> = {};
+    MOCK_SUBJECTS.forEach(subject => {
+      const stored = getStoredEvaluation(subject.code);
+      if (stored) {
+        storedEvaluations[subject.code] = stored;
+      }
+    });
+    setEvaluations(storedEvaluations);
+  }, []);
 
   useEffect(() => {
-    // Handle demo users - set profile from sessionStorage data
-    if (isDemoMode && demoUser) {
+    // For demo mode or when no real user, use mock data
+    if (isDemoMode || !user) {
+      // Use mock profile data
       setProfile({
-        id: "demo-user",
-        first_name: demoUser.profile.firstName,
-        last_name: demoUser.profile.lastName,
-        career_name: "Carrera Demo",
-        semester: 1,
-        enrollment_number: demoUser.profile.documentNumber,
+        id: MOCK_STUDENT_PROFILE.id,
+        first_name: MOCK_STUDENT_PROFILE.firstName,
+        last_name: MOCK_STUDENT_PROFILE.lastName,
+        career_name: MOCK_STUDENT_PROFILE.career,
+        semester: MOCK_STUDENT_PROFILE.semester,
+        enrollment_number: MOCK_STUDENT_PROFILE.enrollmentNumber,
       });
       setLoadingProfile(false);
       setLoadingSubjects(false);
-      // Demo users have no subjects
-      setSubjects([]);
       return;
     }
 
@@ -145,13 +162,13 @@ const Dashboard = () => {
       if (error) throw error;
 
       // Get evaluations
-      const { data: evaluations } = await supabase
+      const { data: dbEvaluations } = await supabase
         .from("teacher_evaluations")
         .select("assignment_id, total_score, blockchain_hash")
         .eq("student_id", profileData.id);
 
       const evaluationMap = new Map(
-        evaluations?.map(e => [e.assignment_id, { score: e.total_score, hash: e.blockchain_hash }])
+        dbEvaluations?.map(e => [e.assignment_id, { score: e.total_score, hash: e.blockchain_hash }])
       );
 
       const subjectsWithDetails: SubjectWithDetails[] = (enrollments || []).map((enrollment: any) => {
@@ -189,29 +206,31 @@ const Dashboard = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    // Always use window.location to ensure full state reset
     window.location.href = "/";
   };
 
-  const handleOpenEvaluation = (subject: SubjectWithDetails) => {
+  const handleOpenEvaluation = (subject: typeof MOCK_SUBJECTS[0]) => {
     setEvaluationModal({
       open: true,
-      assignmentId: subject.assignment_id,
-      subjectName: subject.subject_name,
-      teacherName: subject.teacher_name,
+      subject,
     });
   };
 
-  const handleEvaluationComplete = () => {
-    setEvaluationModal({ open: false, assignmentId: null, subjectName: "", teacherName: "" });
-    fetchSubjects(); // Refresh the subjects list
-    toast({
-      title: "Evaluación registrada",
-      description: "Tu evaluación ha sido guardada correctamente.",
-    });
+  const handleEvaluationComplete = (score: number) => {
+    if (evaluationModal.subject) {
+      const storedEval = saveEvaluation(evaluationModal.subject.code, score);
+      setEvaluations(prev => ({
+        ...prev,
+        [evaluationModal.subject!.code]: storedEval,
+      }));
+    }
+    setEvaluationModal({ open: false, subject: null });
   };
 
-  if (authLoading || roleLoading || !hasAccess) {
+  // Determine if we should show mock subjects (demo mode or no real subjects)
+  const showMockSubjects = isDemoMode || (!loadingSubjects && subjects.length === 0);
+
+  if (authLoading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -229,7 +248,7 @@ const Dashboard = () => {
               Modo Demo
             </Badge>
             <span className="text-xs text-amber-700">
-              Los datos se perderán al cerrar el navegador
+              Los datos se guardan temporalmente en el navegador
             </span>
           </div>
         </div>
@@ -244,7 +263,7 @@ const Dashboard = () => {
             </div>
             <div>
               <h1 className="text-lg font-bold text-foreground">UPEA</h1>
-              <p className="text-xs text-muted-foreground">Sistema de Evaluación</p>
+              <p className="text-xs text-muted-foreground">Sistema de Evaluación Docente</p>
             </div>
           </div>
           
@@ -278,24 +297,42 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             {loadingProfile ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-16" />
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} className="h-20" />
                 ))}
               </div>
             ) : profile ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground mb-1">Carrera</p>
-                  <p className="font-medium text-foreground">{profile.career_name || "Sin asignar"}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-4 rounded-lg bg-muted/50 border border-border/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground">Nombre Completo</p>
+                  </div>
+                  <p className="font-semibold text-foreground">
+                    {profile.first_name} {profile.last_name}
+                  </p>
                 </div>
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground mb-1">Semestre</p>
-                  <p className="font-medium text-foreground">{profile.semester || "-"}</p>
+                <div className="p-4 rounded-lg bg-muted/50 border border-border/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BookOpen className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground">Carrera</p>
+                  </div>
+                  <p className="font-semibold text-foreground">{profile.career_name || "Sin asignar"}</p>
                 </div>
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <p className="text-xs text-muted-foreground mb-1">Matrícula</p>
-                  <p className="font-medium text-foreground">{profile.enrollment_number || "-"}</p>
+                <div className="p-4 rounded-lg bg-muted/50 border border-border/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground">Semestre</p>
+                  </div>
+                  <p className="font-semibold text-foreground">{profile.semester || "-"}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-muted/50 border border-border/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Hash className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground">Matrícula</p>
+                  </div>
+                  <p className="font-semibold text-foreground font-mono">{profile.enrollment_number || "-"}</p>
                 </div>
               </div>
             ) : (
@@ -306,110 +343,95 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Subjects Table */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-full bg-secondary/10 p-3">
-                  <BookOpen className="h-6 w-6 text-secondary" />
-                </div>
-                <div>
-                  <CardTitle>Materias del Semestre</CardTitle>
-                  <CardDescription>Realiza la evaluación docente de tus materias activas</CardDescription>
-                </div>
-              </div>
+        {/* Subjects Section */}
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="rounded-full bg-secondary/10 p-2">
+              <BookOpen className="h-5 w-5 text-secondary" />
             </div>
-          </CardHeader>
-          <CardContent>
-            {loadingSubjects ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-16 w-full" />
-                ))}
-              </div>
-            ) : subjects.length === 0 ? (
-              <div className="text-center py-12">
-                <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">
-                  No tienes materias registradas este semestre.
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">#</TableHead>
-                      <TableHead>Materia</TableHead>
-                      <TableHead>Sigla</TableHead>
-                      <TableHead>Docente</TableHead>
-                      <TableHead className="text-right">Acción</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {subjects.map((subject, index) => (
-                      <TableRow key={subject.id}>
-                        <TableCell className="font-medium">{index + 1}</TableCell>
-                        <TableCell>{subject.subject_name}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{subject.subject_code}</Badge>
-                        </TableCell>
-                        <TableCell>{subject.teacher_name}</TableCell>
-                        <TableCell className="text-right">
-                          {subject.is_evaluated ? (
-                            <div className="flex items-center justify-end gap-2">
-                              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                                Evaluado ({subject.evaluation_score}/70)
-                              </Badge>
-                            </div>
-                          ) : (
-                            <Button
-                              size="sm"
-                              onClick={() => handleOpenEvaluation(subject)}
-                            >
-                              Realizar evaluación
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            <div>
+              <h2 className="text-xl font-bold text-foreground">Materias del Semestre</h2>
+              <p className="text-sm text-muted-foreground">Realiza la evaluación docente de tus materias activas</p>
+            </div>
+          </div>
 
-        {/* Evaluation History */}
-        {subjects.some(s => s.is_evaluated) && (
+          {loadingSubjects ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <Skeleton key={i} className="h-64" />
+              ))}
+            </div>
+          ) : showMockSubjects ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {MOCK_SUBJECTS.map((subject) => {
+                const evaluation = evaluations[subject.code];
+                return (
+                  <SubjectCard
+                    key={subject.id}
+                    subjectName={subject.name}
+                    subjectCode={subject.code}
+                    teacherName={subject.teacherName}
+                    isEvaluated={evaluation?.evaluated || false}
+                    evaluationScore={evaluation?.score}
+                    evaluationDate={evaluation?.date}
+                    onEvaluate={() => handleOpenEvaluation(subject)}
+                  />
+                );
+              })}
+            </div>
+          ) : subjects.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {subjects.map((subject) => (
+                <SubjectCard
+                  key={subject.id}
+                  subjectName={subject.subject_name}
+                  subjectCode={subject.subject_code}
+                  teacherName={subject.teacher_name}
+                  isEvaluated={subject.is_evaluated}
+                  evaluationScore={subject.evaluation_score}
+                  onEvaluate={() => {
+                    // For real subjects, we'd handle differently
+                    toast({
+                      title: "Evaluación",
+                      description: "Esta función está en desarrollo para usuarios registrados.",
+                    });
+                  }}
+                />
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        {/* Evaluation Summary */}
+        {Object.keys(evaluations).length > 0 && (
           <Card className="mt-8">
             <CardHeader>
-              <CardTitle className="text-lg">Historial de Evaluaciones</CardTitle>
-              <CardDescription>Evaluaciones completadas con su puntaje y hash de verificación</CardDescription>
+              <CardTitle className="text-lg">Resumen de Evaluaciones</CardTitle>
+              <CardDescription>Evaluaciones completadas con su puntaje</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {subjects.filter(s => s.is_evaluated).map((subject) => (
-                  <div 
-                    key={subject.id} 
-                    className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-border"
-                  >
-                    <div>
-                      <p className="font-medium text-foreground">{subject.subject_name}</p>
-                      <p className="text-sm text-muted-foreground">{subject.teacher_name}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Object.entries(evaluations).map(([code, evaluation]) => {
+                  const subject = MOCK_SUBJECTS.find(s => s.code === code);
+                  return (
+                    <div 
+                      key={code} 
+                      className="flex items-center justify-between p-4 rounded-lg bg-green-500/5 border border-green-500/20"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-foreground truncate">{subject?.name}</p>
+                        <p className="text-sm text-muted-foreground">{subject?.teacherName}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{evaluation.date}</p>
+                      </div>
+                      <div className="text-right ml-4">
+                        <p className="font-bold text-green-600 text-lg">{evaluation.score}/70</p>
+                        <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/30 text-xs">
+                          Completada
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-primary">{subject.evaluation_score}/70 pts</p>
-                      {subject.blockchain_hash && (
-                        <p className="text-xs text-muted-foreground font-mono truncate max-w-[120px]">
-                          Hash: {subject.blockchain_hash.slice(0, 12)}...
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -417,14 +439,15 @@ const Dashboard = () => {
       </main>
 
       {/* Evaluation Modal */}
-      {evaluationModal.assignmentId && profile && (
-        <TeacherEvaluationModal
+      {evaluationModal.subject && (
+        <EvaluationModal
           open={evaluationModal.open}
           onOpenChange={(open) => setEvaluationModal(prev => ({ ...prev, open }))}
-          assignmentId={evaluationModal.assignmentId}
-          studentId={profile.id}
-          subjectName={evaluationModal.subjectName}
-          teacherName={evaluationModal.teacherName}
+          subjectName={evaluationModal.subject.name}
+          subjectCode={evaluationModal.subject.code}
+          teacherName={evaluationModal.subject.teacherName}
+          paralelo={evaluationModal.subject.paralelo}
+          sede={evaluationModal.subject.sede}
           onComplete={handleEvaluationComplete}
         />
       )}
