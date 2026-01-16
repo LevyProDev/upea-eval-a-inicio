@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,7 +23,6 @@ import {
   LogOut,
   Loader2,
   AlertCircle,
-  Star,
   Clock,
   CheckCircle,
   Target,
@@ -44,13 +42,13 @@ import { useToast } from "@/hooks/use-toast";
 import {
   MOCK_TEACHER_PROFILE,
   MOCK_TEACHER_SUBJECTS,
-  MOCK_STUDENTS_BY_SUBJECT,
   MOCK_TEACHER_EVALUATIONS,
   MOCK_CURRENT_CRITERIA,
   MOCK_STUDENT_FEEDBACK,
   MOCK_TEACHER_STATS,
+  MOCK_SUBJECT_EVALUATIONS,
   type MockTeacherSubject,
-  type MockStudent,
+  type MockSubjectEvaluation,
 } from "@/lib/mockData";
 
 interface TeacherProfile {
@@ -104,7 +102,6 @@ const EVALUATION_CRITERIA = [
 const TeacherDashboard = () => {
   const { user, signOut, loading: authLoading, isDemoMode, demoUser } = useAuth();
   const { hasAccess, loading: roleLoading } = useRoleGuard({ requiredRole: "teacher" });
-  const navigate = useNavigate();
   const { toast } = useToast();
 
   const [teacherProfile, setTeacherProfile] = useState<TeacherProfile | null>(null);
@@ -116,6 +113,10 @@ const TeacherDashboard = () => {
   // Modal state for subject details
   const [selectedSubject, setSelectedSubject] = useState<MockTeacherSubject | null>(null);
   const [showSubjectModal, setShowSubjectModal] = useState(false);
+  
+  // Modal state for detailed evaluation view
+  const [showEvaluationDetailModal, setShowEvaluationDetailModal] = useState(false);
+  const [selectedSubjectEvaluation, setSelectedSubjectEvaluation] = useState<MockSubjectEvaluation | null>(null);
 
   // Demo mode data
   const [useDemoData, setUseDemoData] = useState(false);
@@ -255,23 +256,183 @@ const TeacherDashboard = () => {
     return "text-red-600";
   };
 
-  const getProgressColor = (percentage: number) => {
-    if (percentage >= 80) return "bg-green-500";
-    if (percentage >= 60) return "bg-yellow-500";
-    return "bg-red-500";
-  };
-
   const handleViewSubjectDetails = (subject: MockTeacherSubject) => {
     setSelectedSubject(subject);
     setShowSubjectModal(true);
   };
 
+  const handleViewEvaluationDetail = (subjectCode: string) => {
+    const evaluation = MOCK_SUBJECT_EVALUATIONS[subjectCode];
+    if (evaluation) {
+      setSelectedSubjectEvaluation(evaluation);
+      setShowEvaluationDetailModal(true);
+    }
+  };
+
   const handleExportPDF = () => {
-    toast({
-      title: "Exportando PDF",
-      description: "El reporte se está generando...",
+    // Generate PDF with teacher evaluation report
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo abrir la ventana de impresión. Verifica los permisos del navegador.",
+      });
+      return;
+    }
+
+    const currentDate = new Date().toLocaleDateString('es-BO', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
-    // In a real app, this would generate a PDF
+
+    const subjectsList = displaySubjects.map(subject => {
+      const evaluation = MOCK_SUBJECT_EVALUATIONS[subject.code];
+      return `
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 8px;">${subject.name}</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${subject.code}</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${subject.paralelo}</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${evaluation?.averageScore || 0}%</td>
+        </tr>
+      `;
+    }).join('');
+
+    const criteriaList = EVALUATION_CRITERIA.map(criteria => `
+      <tr>
+        <td style="border: 1px solid #ddd; padding: 8px;">${criteria.label}</td>
+        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${criteriaData[criteria.key as keyof typeof criteriaData]}/${criteria.maxScore}</td>
+        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${Math.round((criteriaData[criteria.key as keyof typeof criteriaData] / criteria.maxScore) * 100)}%</td>
+      </tr>
+    `).join('');
+
+    const feedbackList = MOCK_STUDENT_FEEDBACK.slice(0, 5).map(feedback => `
+      <div style="background: #f9f9f9; padding: 10px; margin-bottom: 10px; border-radius: 4px; border-left: 3px solid #1a365d;">
+        <p style="margin: 0; font-style: italic;">"${feedback.comment}"</p>
+        <p style="margin: 5px 0 0; font-size: 12px; color: #666;">Estudiante anónimo - ${new Date(feedback.date).toLocaleDateString('es-BO')}</p>
+      </div>
+    `).join('');
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Reporte de Evaluación Docente - UPEA</title>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+          .header { text-align: center; border-bottom: 2px solid #1a365d; padding-bottom: 20px; margin-bottom: 20px; }
+          .header h1 { color: #1a365d; margin: 0; font-size: 24px; }
+          .header h2 { color: #2d3748; margin: 5px 0; font-size: 18px; }
+          .header p { color: #718096; margin: 5px 0; font-size: 14px; }
+          .section { margin-bottom: 25px; }
+          .section h3 { color: #1a365d; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+          th { background: #1a365d; color: white; padding: 10px; text-align: left; }
+          .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+          .info-item { background: #f7fafc; padding: 10px; border-radius: 4px; }
+          .info-label { font-size: 12px; color: #718096; }
+          .info-value { font-size: 16px; font-weight: bold; color: #2d3748; }
+          .score-highlight { text-align: center; background: #ebf8ff; padding: 20px; border-radius: 8px; margin: 15px 0; }
+          .score-highlight .score { font-size: 48px; font-weight: bold; color: #1a365d; }
+          .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #718096; }
+          @media print { body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>UNIVERSIDAD PÚBLICA DE EL ALTO</h1>
+          <h2>Carrera: Ciencias de la Educación</h2>
+          <p>Reporte de Evaluación Docente</p>
+          <p>Periodo Académico: Semestral I/2025</p>
+        </div>
+
+        <div class="section">
+          <h3>Información del Docente</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">Nombre completo</div>
+              <div class="info-value">${teacherProfile?.first_name} ${teacherProfile?.last_name}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Correo electrónico</div>
+              <div class="info-value">${teacherProfile?.email}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Especialidad</div>
+              <div class="info-value">${teacherProfile?.specialty || 'No especificada'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Grado académico</div>
+              <div class="info-value">${teacherProfile?.academic_degree || 'No especificado'}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Asignaturas Dictadas</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Asignatura</th>
+                <th style="text-align: center;">Sigla</th>
+                <th style="text-align: center;">Paralelo</th>
+                <th style="text-align: center;">Promedio</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${subjectsList}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="score-highlight">
+          <div class="score">${stats.overallAverage}%</div>
+          <p style="margin: 5px 0 0; color: #4a5568;">Promedio General de Evaluación</p>
+          <p style="margin: 0; font-size: 12px; color: #718096;">Basado en ${stats.totalEvaluations} evaluaciones recibidas</p>
+        </div>
+
+        <div class="section">
+          <h3>Evaluación por Criterios</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Criterio</th>
+                <th style="text-align: center;">Puntaje</th>
+                <th style="text-align: center;">Porcentaje</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${criteriaList}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="section">
+          <h3>Comentarios de Estudiantes</h3>
+          ${feedbackList}
+        </div>
+
+        <div class="footer">
+          <p>Documento generado el ${currentDate}</p>
+          <p>Sistema de Evaluación Docente - Universidad Pública de El Alto</p>
+          <p>Este documento es para respaldo del docente</p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+
+    toast({
+      title: "PDF generado",
+      description: "El reporte se ha abierto en una nueva ventana para imprimir.",
+    });
   };
 
   if (authLoading || roleLoading || loading || !hasAccess) {
@@ -786,7 +947,7 @@ const TeacherDashboard = () => {
         </Tabs>
       </main>
 
-      {/* Subject Details Modal */}
+      {/* Subject Details Modal - Shows evaluation received by teacher */}
       <Dialog open={showSubjectModal} onOpenChange={setShowSubjectModal}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -802,7 +963,7 @@ const TeacherDashboard = () => {
           {selectedSubject && (
             <div className="space-y-6">
               {/* Subject Stats */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Card>
                   <CardContent className="pt-4 text-center">
                     <Users className="h-8 w-8 text-primary mx-auto mb-2" />
@@ -819,6 +980,15 @@ const TeacherDashboard = () => {
                 </Card>
                 <Card>
                   <CardContent className="pt-4 text-center">
+                    <Award className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                    <p className={`text-2xl font-bold ${getScoreColor(MOCK_SUBJECT_EVALUATIONS[selectedSubject.code]?.averageScore || 0)}`}>
+                      {MOCK_SUBJECT_EVALUATIONS[selectedSubject.code]?.averageScore || 0}%
+                    </p>
+                    <p className="text-xs text-muted-foreground">Promedio recibido</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4 text-center">
                     <Layers className="h-8 w-8 text-secondary mx-auto mb-2" />
                     <p className="text-2xl font-bold">{selectedSubject.period}</p>
                     <p className="text-xs text-muted-foreground">Periodo académico</p>
@@ -826,49 +996,144 @@ const TeacherDashboard = () => {
                 </Card>
               </div>
 
-              {/* Students List */}
+              {/* Evaluation Summary by Criteria */}
               <div>
                 <h4 className="font-semibold mb-3 flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Lista de Estudiantes
+                  <BarChart3 className="h-4 w-4" />
+                  Resumen de Evaluación Recibida
                 </h4>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nombre</TableHead>
-                      <TableHead>Matrícula</TableHead>
-                      <TableHead className="text-center">Parcial 1</TableHead>
-                      <TableHead className="text-center">Parcial 2</TableHead>
-                      <TableHead className="text-center">Asistencia</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(MOCK_STUDENTS_BY_SUBJECT[selectedSubject.code] || []).map((student) => (
-                      <TableRow key={student.id}>
-                        <TableCell className="font-medium">
-                          {student.firstName} {student.lastName}
-                        </TableCell>
-                        <TableCell>{student.enrollmentNumber}</TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant={student.grades.parcial1 >= 51 ? "default" : "destructive"}>
-                            {student.grades.parcial1}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant={student.grades.parcial2 >= 51 ? "default" : "destructive"}>
-                            {student.grades.parcial2}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <Progress value={student.attendance} className="w-16 h-2" />
-                            <span className="text-xs">{student.attendance}%</span>
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                  {EVALUATION_CRITERIA.map((criteria) => {
+                    const evaluation = MOCK_SUBJECT_EVALUATIONS[selectedSubject.code];
+                    const score = evaluation?.criteria[criteria.key as keyof typeof evaluation.criteria] || 0;
+                    const percentage = (score / criteria.maxScore) * 100;
+                    const Icon = criteria.icon;
+                    
+                    return (
+                      <Card key={criteria.key} className="text-center">
+                        <CardContent className="pt-3 pb-3">
+                          <div className="flex flex-col items-center gap-1">
+                            <div className="rounded-full bg-primary/10 p-2">
+                              <Icon className="h-4 w-4 text-primary" />
+                            </div>
+                            <span className="text-xs font-medium text-muted-foreground">
+                              {criteria.label}
+                            </span>
+                            <p className={`text-lg font-bold ${getScoreColor(score, criteria.maxScore)}`}>
+                              {score}/{criteria.maxScore}
+                            </p>
+                            <Progress value={percentage} className="h-1.5 w-full" />
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <div className="flex justify-center pt-2">
+                <Button 
+                  onClick={() => handleViewEvaluationDetail(selectedSubject.code)}
+                  className="gap-2"
+                >
+                  <Eye className="h-4 w-4" />
+                  Ver evaluación recibida completa
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Detailed Evaluation Modal */}
+      <Dialog open={showEvaluationDetailModal} onOpenChange={setShowEvaluationDetailModal}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Award className="h-5 w-5" />
+              Evaluación Recibida - {selectedSubjectEvaluation?.subjectName}
+            </DialogTitle>
+            <DialogDescription>
+              Resumen detallado de cómo los estudiantes evaluaron tu desempeño
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedSubjectEvaluation && (
+            <div className="space-y-6">
+              {/* Overall Score */}
+              <div className="flex items-center justify-center p-6 bg-muted/50 rounded-lg">
+                <div className="text-center">
+                  <Award className="h-12 w-12 text-primary mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground mb-1">Promedio General</p>
+                  <p className={`text-4xl font-bold ${getScoreColor(selectedSubjectEvaluation.averageScore)}`}>
+                    {selectedSubjectEvaluation.averageScore}%
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {selectedSubjectEvaluation.evaluationsReceived} de {selectedSubjectEvaluation.totalStudents} estudiantes evaluaron
+                  </p>
+                </div>
+              </div>
+
+              {/* Criteria Breakdown */}
+              <div>
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <Target className="h-4 w-4" />
+                  Evaluación por Criterios
+                </h4>
+                <div className="space-y-3">
+                  {EVALUATION_CRITERIA.map((criteria) => {
+                    const score = selectedSubjectEvaluation.criteria[criteria.key as keyof typeof selectedSubjectEvaluation.criteria];
+                    const percentage = (score / criteria.maxScore) * 100;
+                    const Icon = criteria.icon;
+                    
+                    return (
+                      <div key={criteria.key} className="flex items-center gap-4 p-3 bg-muted/30 rounded-lg">
+                        <div className="rounded-full bg-primary/10 p-2">
+                          <Icon className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-medium">{criteria.label}</span>
+                            <span className={`font-bold ${getScoreColor(score, criteria.maxScore)}`}>
+                              {score}/{criteria.maxScore}
+                            </span>
+                          </div>
+                          <Progress value={percentage} className="h-2" />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Student Feedback for this subject */}
+              <div>
+                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Comentarios de Estudiantes
+                </h4>
+                <div className="space-y-2">
+                  {MOCK_STUDENT_FEEDBACK.filter(fb => fb.subjectCode === selectedSubjectEvaluation.subjectCode).length > 0 ? (
+                    MOCK_STUDENT_FEEDBACK.filter(fb => fb.subjectCode === selectedSubjectEvaluation.subjectCode).map((feedback) => (
+                      <Card key={feedback.id} className="bg-muted/30">
+                        <CardContent className="pt-3 pb-3">
+                          <p className="text-sm italic text-foreground mb-1">
+                            "{feedback.comment}"
+                          </p>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>Estudiante anónimo</span>
+                            <span>{new Date(feedback.date).toLocaleDateString('es-BO')}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No hay comentarios para esta asignatura
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           )}
