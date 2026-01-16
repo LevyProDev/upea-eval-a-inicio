@@ -386,6 +386,57 @@ export const MOCK_STUDENT_FEEDBACK: MockStudentFeedback[] = [
   },
 ];
 
+// Evaluation data per subject (how students evaluated the teacher for each subject)
+export interface MockSubjectEvaluation {
+  subjectCode: string;
+  subjectName: string;
+  evaluationsReceived: number;
+  totalStudents: number;
+  averageScore: number;
+  criteria: {
+    preparation: number;
+    domain: number;
+    compliance: number;
+    punctuality: number;
+    objectivity: number;
+  };
+}
+
+export const MOCK_SUBJECT_EVALUATIONS: Record<string, MockSubjectEvaluation> = {
+  "EDU-100": {
+    subjectCode: "EDU-100",
+    subjectName: "Introducción a las Ciencias de la Educación",
+    evaluationsReceived: 28,
+    totalStudents: 35,
+    averageScore: 86,
+    criteria: { preparation: 18, domain: 17, compliance: 9, punctuality: 9, objectivity: 9 },
+  },
+  "EDU-110": {
+    subjectCode: "EDU-110",
+    subjectName: "Psicología Educativa",
+    evaluationsReceived: 30,
+    totalStudents: 40,
+    averageScore: 82,
+    criteria: { preparation: 17, domain: 16, compliance: 8, punctuality: 9, objectivity: 8 },
+  },
+  "EDU-120": {
+    subjectCode: "EDU-120",
+    subjectName: "Didáctica General",
+    evaluationsReceived: 27,
+    totalStudents: 30,
+    averageScore: 90,
+    criteria: { preparation: 19, domain: 18, compliance: 9, punctuality: 10, objectivity: 9 },
+  },
+  "EDU-140": {
+    subjectCode: "EDU-140",
+    subjectName: "Filosofía de la Educación",
+    evaluationsReceived: 15,
+    totalStudents: 25,
+    averageScore: 78,
+    criteria: { preparation: 16, domain: 15, compliance: 8, punctuality: 8, objectivity: 8 },
+  },
+};
+
 // Calculate mock stats
 export const MOCK_TEACHER_STATS = {
   activeSubjects: MOCK_TEACHER_SUBJECTS.filter(s => s.isActive).length,
