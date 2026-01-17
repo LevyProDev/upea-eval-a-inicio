@@ -45,6 +45,7 @@ import {
   Calendar,
   Hash,
   Shield,
+  Download,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -183,6 +184,384 @@ const DirectorDashboard = () => {
   const handleSignOut = async () => {
     await signOut();
     window.location.href = "/";
+  };
+
+  const handleExportEvaluationsPDF = () => {
+    const currentDate = new Date().toLocaleDateString('es-BO', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const evaluationsData = useDemoData ? MOCK_DIRECTOR_EVALUATIONS : [];
+    const auditData = useDemoData ? MOCK_AUDIT_RECORDS : [];
+
+    // Group evaluations by teacher
+    const teacherMap = new Map<string, typeof evaluationsData>();
+    evaluationsData.forEach(evaluation => {
+      const existing = teacherMap.get(evaluation.teacherName) || [];
+      teacherMap.set(evaluation.teacherName, [...existing, evaluation]);
+    });
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo abrir la ventana de impresión. Por favor, permita las ventanas emergentes.",
+      });
+      return;
+    }
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="es">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Reporte de Evaluaciones - Director de Carrera</title>
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #333;
+            background: #fff;
+            padding: 20px;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 3px solid #1e3a5f;
+            padding-bottom: 20px;
+            margin-bottom: 25px;
+          }
+          .header h1 {
+            color: #1e3a5f;
+            font-size: 20px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
+          .header h2 {
+            color: #c41e3a;
+            font-size: 14px;
+            font-weight: normal;
+            margin-bottom: 5px;
+          }
+          .header h3 {
+            color: #666;
+            font-size: 12px;
+            font-weight: normal;
+          }
+          .director-info {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #1e3a5f;
+          }
+          .director-info h4 {
+            color: #1e3a5f;
+            margin-bottom: 8px;
+            font-size: 13px;
+          }
+          .director-info p {
+            margin: 3px 0;
+            font-size: 11px;
+          }
+          .section {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+          }
+          .section-title {
+            color: #1e3a5f;
+            font-size: 14px;
+            font-weight: bold;
+            border-bottom: 2px solid #c41e3a;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+          }
+          .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+          }
+          .stat-card {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 5px;
+            text-align: center;
+            border: 1px solid #ddd;
+          }
+          .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1e3a5f;
+          }
+          .stat-label {
+            font-size: 10px;
+            color: #666;
+            text-transform: uppercase;
+          }
+          .teacher-section {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            page-break-inside: avoid;
+          }
+          .teacher-header {
+            background: #1e3a5f;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 5px 5px 0 0;
+          }
+          .teacher-header h5 {
+            font-size: 12px;
+            margin: 0;
+          }
+          .teacher-content {
+            padding: 15px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+            font-size: 10px;
+          }
+          th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+          }
+          th {
+            background: #f5f5f5;
+            font-weight: bold;
+            color: #1e3a5f;
+          }
+          .criteria-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+          }
+          .criteria-item {
+            text-align: center;
+            padding: 8px 5px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 9px;
+          }
+          .criteria-value {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1e3a5f;
+          }
+          .criteria-label {
+            font-size: 8px;
+            color: #666;
+          }
+          .progress-bar {
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            margin-top: 4px;
+            overflow: hidden;
+          }
+          .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1e3a5f, #c41e3a);
+            border-radius: 3px;
+          }
+          .audit-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+          }
+          .audit-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #1e3a5f;
+          }
+          .hash-code {
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            background: #e8e8e8;
+            padding: 3px 6px;
+            border-radius: 3px;
+            word-break: break-all;
+          }
+          .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 2px solid #1e3a5f;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+          }
+          .score-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 11px;
+          }
+          .score-high { background: #d4edda; color: #155724; }
+          .score-medium { background: #fff3cd; color: #856404; }
+          .score-low { background: #f8d7da; color: #721c24; }
+          @media print {
+            body { padding: 0; }
+            .section { page-break-inside: avoid; }
+            .teacher-section { page-break-inside: avoid; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Universidad Pública de El Alto</h1>
+          <h2>Facultad de Humanidades y Ciencias de la Educación</h2>
+          <h3>Carrera: ${career?.name || 'Ciencias de la Educación'} • Periodo Académico: I/2025</h3>
+        </div>
+
+        <div class="director-info">
+          <h4>REPORTE CONSOLIDADO DE EVALUACIÓN DOCENTE</h4>
+          <p><strong>Director:</strong> ${directorProfile?.first_name} ${directorProfile?.last_name}</p>
+          <p><strong>Cargo:</strong> ${directorProfile?.position || 'Director de Carrera'}</p>
+          <p><strong>Fecha de generación:</strong> ${currentDate}</p>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value">${stats.totalStudents.toLocaleString()}</div>
+            <div class="stat-label">Estudiantes</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${stats.totalTeachers}</div>
+            <div class="stat-label">Docentes</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${stats.totalEvaluations.toLocaleString()}</div>
+            <div class="stat-label">Evaluaciones</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${stats.overallAverage}%</div>
+            <div class="stat-label">Promedio General</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3 class="section-title">Resumen de Evaluaciones por Docente y Asignatura</h3>
+          
+          ${Array.from(teacherMap.entries()).map(([teacherName, teacherEvals]) => `
+            <div class="teacher-section">
+              <div class="teacher-header">
+                <h5>${teacherName}</h5>
+              </div>
+              <div class="teacher-content">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Asignatura</th>
+                      <th>Código</th>
+                      <th>Paralelo</th>
+                      <th>Sede</th>
+                      <th>Evaluados</th>
+                      <th>Promedio</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${teacherEvals.map(ev => `
+                      <tr>
+                        <td>${ev.subjectName}</td>
+                        <td>${ev.subjectCode}</td>
+                        <td>${ev.paralelo}</td>
+                        <td>${ev.sede}</td>
+                        <td>${ev.evaluatedCount}/${ev.totalStudents}</td>
+                        <td>
+                          <span class="score-badge ${ev.averageScore >= 85 ? 'score-high' : ev.averageScore >= 70 ? 'score-medium' : 'score-low'}">
+                            ${ev.averageScore}%
+                          </span>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+                
+                <div style="margin-top: 10px;">
+                  <strong style="font-size: 10px; color: #666;">Evaluación por Criterios (Promedio):</strong>
+                  <div class="criteria-grid">
+                    ${Object.entries(teacherEvals[0].criteria).map(([key, value]) => `
+                      <div class="criteria-item">
+                        <div class="criteria-value">${value}</div>
+                        <div class="criteria-label">${getCriteriaLabel(key)}</div>
+                        <div class="progress-bar">
+                          <div class="progress-fill" style="width: ${(value / getCriteriaMax(key)) * 100}%"></div>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="section">
+          <h3 class="section-title">Trazabilidad Blockchain - Auditoría</h3>
+          <div class="audit-section">
+            <table>
+              <thead>
+                <tr>
+                  <th>Periodo</th>
+                  <th>Total Evaluaciones</th>
+                  <th>Hash Global</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${auditData.map(record => `
+                  <tr>
+                    <td><strong>${record.period}</strong></td>
+                    <td>${record.totalEvaluations.toLocaleString()}</td>
+                    <td><code class="hash-code">${record.globalHash}</code></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="footer">
+          <p><strong>Universidad Pública de El Alto - UPEA</strong></p>
+          <p>Sistema de Evaluación Docente con Trazabilidad Blockchain</p>
+          <p>Documento generado el ${currentDate}</p>
+          <p style="margin-top: 10px; font-size: 9px; color: #999;">
+            Este documento es para uso exclusivo del Director de Carrera y tiene carácter informativo.
+          </p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    
+    setTimeout(() => {
+      printWindow.print();
+    }, 500);
+
+    toast({
+      title: "PDF generado",
+      description: "El reporte de evaluaciones está listo para descarga.",
+    });
   };
 
   const getCriteriaLabel = (key: string): string => {
@@ -562,6 +941,17 @@ const DirectorDashboard = () => {
                       </CardContent>
                     </Card>
                   ))}
+                </div>
+
+                {/* Export PDF Button */}
+                <div className="flex justify-end mt-6">
+                  <Button
+                    onClick={handleExportEvaluationsPDF}
+                    className="gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Exportar PDF
+                  </Button>
                 </div>
               </CardContent>
             </Card>
