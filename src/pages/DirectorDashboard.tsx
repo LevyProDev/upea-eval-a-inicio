@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -16,6 +17,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import DirectorRegisterModal from "@/components/director/DirectorRegisterModal";
 import {
   Award,
@@ -30,8 +38,29 @@ import {
   TrendingUp,
   Link as LinkIcon,
   Building2,
+  Eye,
+  CheckCircle2,
+  XCircle,
+  MessageSquare,
+  Calendar,
+  Hash,
+  Shield,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  MOCK_DIRECTOR_STATS,
+  MOCK_DIRECTOR_TEACHERS,
+  MOCK_DIRECTOR_STUDENTS,
+  MOCK_DIRECTOR_EVALUATIONS,
+  MOCK_AUDIT_RECORDS,
+  MOCK_TEACHER_EVALUATION_DETAILS,
+  MOCK_STUDENT_HISTORIES,
+  MOCK_EVALUATION_COMMENTS,
+  MockDirectorTeacher,
+  MockDirectorStudent,
+  MockDirectorEvaluation,
+  MockAuditRecord,
+} from "@/lib/mockData";
 
 interface DirectorProfile {
   id: string;
@@ -50,45 +79,6 @@ interface Career {
   code: string;
 }
 
-interface Teacher {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string | null;
-  department: string | null;
-  specialty: string | null;
-}
-
-interface StudentProfile {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  semester: number | null;
-}
-
-interface Evaluation {
-  id: string;
-  total_score: number;
-  evaluated_at: string;
-  blockchain_hash: string | null;
-  assignment_id: string;
-}
-
-interface SubjectAssignment {
-  id: string;
-  academic_year: number;
-  period: string;
-  subject: {
-    name: string;
-    code: string;
-  };
-  teacher: {
-    first_name: string;
-    last_name: string;
-  };
-}
-
 const DirectorDashboard = () => {
   const { user, signOut, loading: authLoading, isDemoMode, demoUser } = useAuth();
   const { hasAccess, loading: roleLoading } = useRoleGuard({ requiredRole: "director" });
@@ -97,15 +87,23 @@ const DirectorDashboard = () => {
 
   const [directorProfile, setDirectorProfile] = useState<DirectorProfile | null>(null);
   const [career, setCareer] = useState<Career | null>(null);
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [students, setStudents] = useState<StudentProfile[]>([]);
-  const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
-  const [assignments, setAssignments] = useState<SubjectAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
 
+  // Modal states
+  const [selectedTeacher, setSelectedTeacher] = useState<MockDirectorTeacher | null>(null);
+  const [showTeacherModal, setShowTeacherModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<MockDirectorStudent | null>(null);
+  const [showStudentModal, setShowStudentModal] = useState(false);
+  const [selectedEvaluation, setSelectedEvaluation] = useState<MockDirectorEvaluation | null>(null);
+  const [showEvaluationModal, setShowEvaluationModal] = useState(false);
+  const [selectedAuditPeriod, setSelectedAuditPeriod] = useState<MockAuditRecord | null>(null);
+  const [showAuditModal, setShowAuditModal] = useState(false);
+
+  // Check if we should use demo data
+  const useDemoData = isDemoMode || !user;
+
   useEffect(() => {
-    // Handle demo users
     if (isDemoMode && demoUser) {
       setDirectorProfile({
         id: "demo-director",
@@ -113,9 +111,14 @@ const DirectorDashboard = () => {
         last_name: demoUser.profile.lastName,
         email: demoUser.email,
         career_id: null,
-        faculty: "Facultad de Ingeniería",
+        faculty: "Facultad de Humanidades y Ciencias de la Educación",
         position: "Director de Carrera",
         registration_completed: true,
+      });
+      setCareer({
+        id: "demo-career",
+        name: "Ciencias de la Educación",
+        code: "CE-001",
       });
       setLoading(false);
       return;
@@ -130,7 +133,6 @@ const DirectorDashboard = () => {
     if (!user) return;
 
     try {
-      // Fetch director profile
       const { data: profile, error: profileError } = await supabase
         .from("director_profiles")
         .select("*")
@@ -153,7 +155,6 @@ const DirectorDashboard = () => {
         return;
       }
 
-      // Fetch career info
       if (profile.career_id) {
         const { data: careerData } = await supabase
           .from("careers")
@@ -163,74 +164,6 @@ const DirectorDashboard = () => {
         
         if (careerData) {
           setCareer(careerData);
-
-          // Fetch students in this career
-          const { data: studentsData } = await supabase
-            .from("student_profiles")
-            .select("id, first_name, last_name, email, semester")
-            .eq("career_id", profile.career_id)
-            .order("last_name");
-
-          if (studentsData) setStudents(studentsData);
-
-          // Fetch subjects for this career and their assignments
-          const { data: subjectsData } = await supabase
-            .from("subjects")
-            .select("id")
-            .eq("career_id", profile.career_id);
-
-          if (subjectsData && subjectsData.length > 0) {
-            const subjectIds = subjectsData.map(s => s.id);
-            
-            // Fetch assignments with teacher and subject info
-            const { data: assignmentsData } = await supabase
-              .from("subject_assignments")
-              .select(`
-                id,
-                academic_year,
-                period,
-                subject_id,
-                teacher_id
-              `)
-              .in("subject_id", subjectIds)
-              .eq("is_active", true);
-
-            if (assignmentsData && assignmentsData.length > 0) {
-              // Fetch related subjects and teachers
-              const teacherIds = [...new Set(assignmentsData.map(a => a.teacher_id))];
-              
-              const [subjectsRes, teachersRes] = await Promise.all([
-                supabase.from("subjects").select("id, name, code").in("id", subjectIds),
-                supabase.from("teachers").select("id, first_name, last_name, email, department, specialty").in("id", teacherIds),
-              ]);
-
-              const subjectsMap = new Map(subjectsRes.data?.map(s => [s.id, s]) || []);
-              const teachersMap = new Map(teachersRes.data?.map(t => [t.id, t]) || []);
-
-              setTeachers(teachersRes.data || []);
-
-              const enrichedAssignments = assignmentsData.map(a => ({
-                id: a.id,
-                academic_year: a.academic_year,
-                period: a.period,
-                subject: subjectsMap.get(a.subject_id) || { name: "Desconocida", code: "N/A" },
-                teacher: teachersMap.get(a.teacher_id) || { first_name: "Desconocido", last_name: "" },
-              }));
-
-              setAssignments(enrichedAssignments);
-
-              // Fetch evaluations for these assignments
-              const assignmentIds = assignmentsData.map(a => a.id);
-              const { data: evalsData } = await supabase
-                .from("teacher_evaluations")
-                .select("*")
-                .in("assignment_id", assignmentIds)
-                .order("evaluated_at", { ascending: false })
-                .limit(100);
-
-              if (evalsData) setEvaluations(evalsData);
-            }
-          }
         }
       }
     } catch (error: any) {
@@ -249,14 +182,34 @@ const DirectorDashboard = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    // Always use window.location to ensure full state reset
     window.location.href = "/";
   };
 
-  const getAverageScore = () => {
-    if (evaluations.length === 0) return 0;
-    const total = evaluations.reduce((sum, e) => sum + e.total_score, 0);
-    return (total / evaluations.length).toFixed(1);
+  const getCriteriaLabel = (key: string): string => {
+    const labels: Record<string, string> = {
+      preparation: "Preparación pedagógica",
+      domain: "Dominio del contenido",
+      compliance: "Cumplimiento del plan",
+      punctuality: "Puntualidad",
+      objectivity: "Objetividad",
+    };
+    return labels[key] || key;
+  };
+
+  const getCriteriaMax = (key: string): number => {
+    return key === "preparation" || key === "domain" ? 20 : 10;
+  };
+
+  const getScoreColor = (score: number): string => {
+    if (score >= 85) return "text-green-600";
+    if (score >= 70) return "text-yellow-600";
+    return "text-red-600";
+  };
+
+  const getScoreBadgeVariant = (score: number): "default" | "secondary" | "destructive" => {
+    if (score >= 85) return "default";
+    if (score >= 70) return "secondary";
+    return "destructive";
   };
 
   if (authLoading || roleLoading || loading || !hasAccess) {
@@ -266,6 +219,13 @@ const DirectorDashboard = () => {
       </div>
     );
   }
+
+  // Use mock data for demo mode
+  const stats = useDemoData ? MOCK_DIRECTOR_STATS : { totalStudents: 0, totalTeachers: 0, totalEvaluations: 0, overallAverage: 0 };
+  const teachers = useDemoData ? MOCK_DIRECTOR_TEACHERS : [];
+  const students = useDemoData ? MOCK_DIRECTOR_STUDENTS : [];
+  const evaluations = useDemoData ? MOCK_DIRECTOR_EVALUATIONS : [];
+  const auditRecords = useDemoData ? MOCK_AUDIT_RECORDS : [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -324,11 +284,11 @@ const DirectorDashboard = () => {
           <Card>
             <CardContent className="pt-4">
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-primary/10 p-2">
-                  <Users className="h-5 w-5 text-primary" />
+                <div className="rounded-lg bg-blue-100 dark:bg-blue-900/30 p-2">
+                  <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{students.length}</p>
+                  <p className="text-2xl font-bold">{stats.totalStudents.toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground">Estudiantes</p>
                 </div>
               </div>
@@ -338,11 +298,11 @@ const DirectorDashboard = () => {
           <Card>
             <CardContent className="pt-4">
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-primary/10 p-2">
-                  <GraduationCap className="h-5 w-5 text-primary" />
+                <div className="rounded-lg bg-green-100 dark:bg-green-900/30 p-2">
+                  <GraduationCap className="h-5 w-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{teachers.length}</p>
+                  <p className="text-2xl font-bold">{stats.totalTeachers}</p>
                   <p className="text-xs text-muted-foreground">Docentes</p>
                 </div>
               </div>
@@ -352,11 +312,11 @@ const DirectorDashboard = () => {
           <Card>
             <CardContent className="pt-4">
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-primary/10 p-2">
-                  <FileText className="h-5 w-5 text-primary" />
+                <div className="rounded-lg bg-purple-100 dark:bg-purple-900/30 p-2">
+                  <FileText className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{evaluations.length}</p>
+                  <p className="text-2xl font-bold">{stats.totalEvaluations.toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground">Evaluaciones</p>
                 </div>
               </div>
@@ -366,11 +326,11 @@ const DirectorDashboard = () => {
           <Card>
             <CardContent className="pt-4">
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-primary/10 p-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
+                <div className="rounded-lg bg-orange-100 dark:bg-orange-900/30 p-2">
+                  <TrendingUp className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{getAverageScore()}</p>
+                  <p className="text-2xl font-bold">{stats.overallAverage}%</p>
                   <p className="text-xs text-muted-foreground">Promedio General</p>
                 </div>
               </div>
@@ -408,40 +368,53 @@ const DirectorDashboard = () => {
                   Docentes de la Carrera
                 </CardTitle>
                 <CardDescription>
-                  Lista de docentes asignados a materias de la carrera
+                  Lista de docentes activos en Ciencias de la Educación
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {teachers.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    No hay docentes asignados a esta carrera.
-                  </p>
-                ) : (
-                  <ScrollArea className="h-[400px]">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Nombre</TableHead>
-                          <TableHead>Correo</TableHead>
-                          <TableHead>Departamento</TableHead>
-                          <TableHead>Especialidad</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {teachers.map((teacher) => (
-                          <TableRow key={teacher.id}>
-                            <TableCell className="font-medium">
-                              {teacher.first_name} {teacher.last_name}
-                            </TableCell>
-                            <TableCell>{teacher.email || "-"}</TableCell>
-                            <TableCell>{teacher.department || "-"}</TableCell>
-                            <TableCell>{teacher.specialty || "-"}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </ScrollArea>
-                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {teachers.map((teacher) => (
+                    <Card key={teacher.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="pt-4">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-semibold">{teacher.academicDegree}. {teacher.firstName} {teacher.lastName}</h4>
+                              <p className="text-xs text-muted-foreground">{teacher.email}</p>
+                            </div>
+                            <Badge variant={getScoreBadgeVariant(teacher.averageScore)}>
+                              {teacher.averageScore}%
+                            </Badge>
+                          </div>
+                          
+                          <div className="text-sm text-muted-foreground">
+                            <p><strong>Especialidad:</strong> {teacher.specialty}</p>
+                            <p><strong>Asignaturas:</strong> {teacher.subjects.join(", ")}</p>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              {teacher.evaluationStatus}
+                            </Badge>
+                          </div>
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full"
+                            onClick={() => {
+                              setSelectedTeacher(teacher);
+                              setShowTeacherModal(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Ver evaluación
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -459,42 +432,65 @@ const DirectorDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {students.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    No hay estudiantes registrados en esta carrera.
-                  </p>
-                ) : (
-                  <ScrollArea className="h-[400px]">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Nombre</TableHead>
-                          <TableHead>Correo</TableHead>
-                          <TableHead>Semestre</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {students.map((student) => (
-                          <TableRow key={student.id}>
-                            <TableCell className="font-medium">
-                              {student.first_name} {student.last_name}
-                            </TableCell>
-                            <TableCell>{student.email}</TableCell>
-                            <TableCell>
-                              {student.semester ? (
-                                <Badge variant="outline">
-                                  Semestre {student.semester}
-                                </Badge>
+                <ScrollArea className="h-[500px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nombre</TableHead>
+                        <TableHead>Matrícula</TableHead>
+                        <TableHead>Semestre</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead>Evaluaciones</TableHead>
+                        <TableHead className="text-right">Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {students.map((student) => (
+                        <TableRow key={student.id}>
+                          <TableCell className="font-medium">
+                            {student.firstName} {student.lastName}
+                          </TableCell>
+                          <TableCell>{student.enrollmentNumber}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              Semestre {student.semester}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={student.registrationStatus === "Activo" ? "default" : "secondary"}>
+                              {student.registrationStatus}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {student.hasEvaluated ? (
+                                <CheckCircle2 className="h-4 w-4 text-green-500" />
                               ) : (
-                                "-"
+                                <XCircle className="h-4 w-4 text-red-500" />
                               )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </ScrollArea>
-                )}
+                              <span className="text-sm">
+                                {student.subjectsEvaluated}/{student.subjectsEnrolled}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedStudent(student);
+                                setShowStudentModal(true);
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Ver historial
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
               </CardContent>
             </Card>
           </TabsContent>
@@ -508,45 +504,65 @@ const DirectorDashboard = () => {
                   Evaluaciones por Asignatura
                 </CardTitle>
                 <CardDescription>
-                  Resumen de evaluaciones docentes agregadas
+                  Resumen consolidado de evaluaciones de estudiantes hacia docentes
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {assignments.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    No hay asignaciones activas para esta carrera.
-                  </p>
-                ) : (
-                  <ScrollArea className="h-[400px]">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Materia</TableHead>
-                          <TableHead>Docente</TableHead>
-                          <TableHead>Periodo</TableHead>
-                          <TableHead>Año</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {assignments.map((assignment) => (
-                          <TableRow key={assignment.id}>
-                            <TableCell className="font-medium">
-                              {assignment.subject.name}
-                              <p className="text-xs text-muted-foreground">
-                                {assignment.subject.code}
-                              </p>
-                            </TableCell>
-                            <TableCell>
-                              {assignment.teacher.first_name} {assignment.teacher.last_name}
-                            </TableCell>
-                            <TableCell>{assignment.period}</TableCell>
-                            <TableCell>{assignment.academic_year}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </ScrollArea>
-                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {evaluations.map((evaluation) => (
+                    <Card key={evaluation.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="pt-4">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-semibold">{evaluation.subjectName}</h4>
+                              <p className="text-xs text-muted-foreground">{evaluation.subjectCode}</p>
+                            </div>
+                            <Badge variant={getScoreBadgeVariant(evaluation.averageScore)} className="text-lg px-3">
+                              {evaluation.averageScore}%
+                            </Badge>
+                          </div>
+                          
+                          <div className="text-sm">
+                            <p><strong>Docente:</strong> {evaluation.teacherName}</p>
+                            <p><strong>Paralelo:</strong> {evaluation.paralelo} • <strong>Sede:</strong> {evaluation.sede}</p>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Users className="h-4 w-4" />
+                            <span>{evaluation.evaluatedCount}/{evaluation.totalStudents} estudiantes evaluaron</span>
+                          </div>
+
+                          {/* Criteria Progress */}
+                          <div className="space-y-2">
+                            {Object.entries(evaluation.criteria).slice(0, 3).map(([key, value]) => (
+                              <div key={key} className="space-y-1">
+                                <div className="flex justify-between text-xs">
+                                  <span>{getCriteriaLabel(key)}</span>
+                                  <span>{value}/{getCriteriaMax(key)}</span>
+                                </div>
+                                <Progress value={(value / getCriteriaMax(key)) * 100} className="h-1" />
+                              </div>
+                            ))}
+                          </div>
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full"
+                            onClick={() => {
+                              setSelectedEvaluation(evaluation);
+                              setShowEvaluationModal(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Ver detalle
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -560,54 +576,389 @@ const DirectorDashboard = () => {
                   Historial de Auditoría
                 </CardTitle>
                 <CardDescription>
-                  Evaluaciones con registro en blockchain
+                  Evaluaciones con trazabilidad blockchain por periodo académico
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {evaluations.filter(e => e.blockchain_hash).length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    No hay registros de auditoría disponibles.
-                  </p>
-                ) : (
-                  <ScrollArea className="h-[400px]">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Fecha</TableHead>
-                          <TableHead>Puntuación</TableHead>
-                          <TableHead>Hash Blockchain</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {evaluations
-                          .filter((e) => e.blockchain_hash)
-                          .map((evaluation) => (
-                            <TableRow key={evaluation.id}>
-                              <TableCell>
-                                {new Date(evaluation.evaluated_at).toLocaleDateString("es-BO")}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline">{evaluation.total_score}/100</Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-1">
-                                  <LinkIcon className="h-3 w-3 text-muted-foreground" />
-                                  <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                                    {evaluation.blockchain_hash?.slice(0, 16)}...
-                                  </code>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                      </TableBody>
-                    </Table>
-                  </ScrollArea>
-                )}
+                <div className="space-y-4">
+                  {auditRecords.map((record) => (
+                    <Card key={record.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="pt-4">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className="rounded-lg bg-primary/10 p-3">
+                              <Shield className="h-6 w-6 text-primary" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-lg">Periodo {record.period}</h4>
+                              <p className="text-sm text-muted-foreground">
+                                {record.totalEvaluations.toLocaleString()} evaluaciones registradas
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
+                            <div className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-md">
+                              <Hash className="h-4 w-4 text-muted-foreground" />
+                              <code className="text-xs font-mono">
+                                {record.globalHash.slice(0, 16)}...{record.globalHash.slice(-8)}
+                              </code>
+                            </div>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedAuditPeriod(record);
+                                setShowAuditModal(true);
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Ver registros
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Teacher Evaluation Modal */}
+      <Dialog open={showTeacherModal} onOpenChange={setShowTeacherModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <GraduationCap className="h-5 w-5" />
+              Evaluación de Docente
+            </DialogTitle>
+            <DialogDescription>
+              Resumen de evaluaciones recibidas por el docente
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedTeacher && MOCK_TEACHER_EVALUATION_DETAILS[selectedTeacher.id] && (
+            <div className="space-y-6">
+              {/* Teacher Info */}
+              <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
+                <div className="rounded-full bg-primary/10 p-3">
+                  <GraduationCap className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">
+                    {MOCK_TEACHER_EVALUATION_DETAILS[selectedTeacher.id].teacherName}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedTeacher.department} • {selectedTeacher.specialty}
+                  </p>
+                </div>
+                <Badge variant={getScoreBadgeVariant(MOCK_TEACHER_EVALUATION_DETAILS[selectedTeacher.id].overallAverage)} className="ml-auto text-lg px-4 py-1">
+                  {MOCK_TEACHER_EVALUATION_DETAILS[selectedTeacher.id].overallAverage}%
+                </Badge>
+              </div>
+
+              {/* Evaluations by Subject */}
+              <div className="space-y-4">
+                <h4 className="font-semibold">Evaluaciones por Asignatura</h4>
+                {MOCK_TEACHER_EVALUATION_DETAILS[selectedTeacher.id].evaluationsBySubject.map((subjectEval, index) => (
+                  <Card key={index}>
+                    <CardContent className="pt-4">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h5 className="font-medium">{subjectEval.subjectName}</h5>
+                          <p className="text-xs text-muted-foreground">{subjectEval.subjectCode}</p>
+                        </div>
+                        <Badge variant={getScoreBadgeVariant(subjectEval.averageScore)}>
+                          {subjectEval.averageScore}%
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {subjectEval.evaluatedCount}/{subjectEval.totalStudents} estudiantes evaluaron
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {Object.entries(subjectEval.criteria).map(([key, value]) => (
+                          <div key={key} className="space-y-1">
+                            <div className="flex justify-between text-xs">
+                              <span>{getCriteriaLabel(key)}</span>
+                              <span>{value}/{getCriteriaMax(key)}</span>
+                            </div>
+                            <Progress value={(value / getCriteriaMax(key)) * 100} className="h-1.5" />
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Feedback */}
+              <div className="space-y-3">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Comentarios de Estudiantes
+                </h4>
+                {MOCK_TEACHER_EVALUATION_DETAILS[selectedTeacher.id].feedback.map((fb, index) => (
+                  <Card key={index} className="bg-muted/50">
+                    <CardContent className="pt-3 pb-3">
+                      <p className="text-sm italic">"{fb.comment}"</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {fb.subjectName} • {fb.date}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Student History Modal */}
+      <Dialog open={showStudentModal} onOpenChange={setShowStudentModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Historial Académico
+            </DialogTitle>
+            <DialogDescription>
+              Materias cursadas y estado de evaluación docente
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedStudent && (
+            <div className="space-y-6">
+              {/* Student Info */}
+              <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
+                <div className="rounded-full bg-primary/10 p-3">
+                  <Users className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">
+                    {selectedStudent.firstName} {selectedStudent.lastName}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Matrícula: {selectedStudent.enrollmentNumber} • Semestre {selectedStudent.semester}
+                  </p>
+                </div>
+                <Badge variant={selectedStudent.hasEvaluated ? "default" : "secondary"} className="ml-auto">
+                  {selectedStudent.hasEvaluated ? "Ha evaluado" : "Pendiente"}
+                </Badge>
+              </div>
+
+              {/* Subjects History */}
+              <div className="space-y-3">
+                <h4 className="font-semibold">Materias y Estado de Evaluación</h4>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Materia</TableHead>
+                      <TableHead>Docente</TableHead>
+                      <TableHead>Evaluó</TableHead>
+                      <TableHead>Fecha</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(MOCK_STUDENT_HISTORIES[selectedStudent.id] || MOCK_STUDENT_HISTORIES["ds-001"]).map((history) => (
+                      <TableRow key={history.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{history.subjectName}</p>
+                            <p className="text-xs text-muted-foreground">{history.subjectCode}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>{history.teacherName}</TableCell>
+                        <TableCell>
+                          {history.hasEvaluated ? (
+                            <div className="flex items-center gap-1 text-green-600">
+                              <CheckCircle2 className="h-4 w-4" />
+                              <span className="text-sm">Sí</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 text-red-600">
+                              <XCircle className="h-4 w-4" />
+                              <span className="text-sm">No</span>
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {history.evaluationDate || "-"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <p className="text-xs text-muted-foreground text-center">
+                El director solo puede visualizar el estado de evaluación, no puede modificar datos del estudiante.
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Evaluation Detail Modal */}
+      <Dialog open={showEvaluationModal} onOpenChange={setShowEvaluationModal}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Detalle de Evaluación
+            </DialogTitle>
+            <DialogDescription>
+              Evaluaciones recibidas por el docente en esta asignatura
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedEvaluation && (
+            <div className="space-y-6">
+              {/* Subject Info */}
+              <div className="p-4 bg-muted rounded-lg">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-semibold text-lg">{selectedEvaluation.subjectName}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedEvaluation.subjectCode} • {selectedEvaluation.teacherName}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Paralelo {selectedEvaluation.paralelo} • {selectedEvaluation.sede}
+                    </p>
+                  </div>
+                  <Badge variant={getScoreBadgeVariant(selectedEvaluation.averageScore)} className="text-xl px-4 py-2">
+                    {selectedEvaluation.averageScore}%
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Participation */}
+              <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                <Users className="h-5 w-5 text-blue-600" />
+                <span className="text-sm">
+                  <strong>{selectedEvaluation.evaluatedCount}</strong> de <strong>{selectedEvaluation.totalStudents}</strong> estudiantes evaluaron
+                  <span className="text-muted-foreground"> ({Math.round((selectedEvaluation.evaluatedCount / selectedEvaluation.totalStudents) * 100)}%)</span>
+                </span>
+              </div>
+
+              {/* Full Criteria Breakdown */}
+              <div className="space-y-3">
+                <h4 className="font-semibold">Evaluación por Criterios</h4>
+                {Object.entries(selectedEvaluation.criteria).map(([key, value]) => (
+                  <div key={key} className="space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span>{getCriteriaLabel(key)}</span>
+                      <span className={getScoreColor((value / getCriteriaMax(key)) * 100)}>
+                        {value}/{getCriteriaMax(key)} ({Math.round((value / getCriteriaMax(key)) * 100)}%)
+                      </span>
+                    </div>
+                    <Progress value={(value / getCriteriaMax(key)) * 100} className="h-2" />
+                  </div>
+                ))}
+              </div>
+
+              {/* Comments */}
+              <div className="space-y-3">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Comentarios de Estudiantes
+                </h4>
+                {(MOCK_EVALUATION_COMMENTS[selectedEvaluation.id] || []).map((comment, index) => (
+                  <Card key={index} className="bg-muted/50">
+                    <CardContent className="pt-3 pb-3">
+                      <p className="text-sm italic">"{comment}"</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Audit Detail Modal */}
+      <Dialog open={showAuditModal} onOpenChange={setShowAuditModal}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Registros de Auditoría
+            </DialogTitle>
+            <DialogDescription>
+              Evaluaciones con trazabilidad blockchain
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedAuditPeriod && (
+            <div className="space-y-6">
+              {/* Period Info */}
+              <div className="p-4 bg-muted rounded-lg">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-semibold text-lg">Periodo {selectedAuditPeriod.period}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedAuditPeriod.totalEvaluations.toLocaleString()} evaluaciones registradas
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="font-mono text-xs">
+                    Hash global: {selectedAuditPeriod.globalHash.slice(0, 20)}...
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Records Table */}
+              <div className="space-y-3">
+                <h4 className="font-semibold">Registros Individuales</h4>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Fecha</TableHead>
+                      <TableHead>Asignatura</TableHead>
+                      <TableHead>Docente</TableHead>
+                      <TableHead>Promedio</TableHead>
+                      <TableHead>Hash</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedAuditPeriod.records.map((record) => (
+                      <TableRow key={record.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            {record.date}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-medium">{record.subjectName}</TableCell>
+                        <TableCell>{record.teacherName}</TableCell>
+                        <TableCell>
+                          <Badge variant={getScoreBadgeVariant(record.averageScore)}>
+                            {record.averageScore}%
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <LinkIcon className="h-3 w-3 text-muted-foreground" />
+                            <code className="text-xs bg-muted px-1 py-0.5 rounded font-mono">
+                              {record.hash}
+                            </code>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <p className="text-xs text-muted-foreground text-center">
+                Todos los registros están respaldados en blockchain para garantizar transparencia e inmutabilidad.
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Register Modal */}
       <DirectorRegisterModal
