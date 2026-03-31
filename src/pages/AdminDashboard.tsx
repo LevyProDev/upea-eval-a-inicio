@@ -778,10 +778,24 @@ const AdminDashboard = () => {
                 </div>
 
                 {userForm.role === "student" ? (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2"><Label>CI</Label><Input value={userForm.documentNumber} onChange={(e) => setUserForm({ ...userForm, documentNumber: e.target.value })} placeholder="12345678" /></div>
-                    <div className="space-y-2"><Label>Matrícula</Label><Input value={userForm.matricula} onChange={(e) => setUserForm({ ...userForm, matricula: e.target.value })} placeholder="EST-2025-001" /></div>
-                  </div>
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2"><Label>CI</Label><Input value={userForm.documentNumber} onChange={(e) => setUserForm({ ...userForm, documentNumber: e.target.value })} placeholder="12345678" /></div>
+                      <div className="space-y-2"><Label>Matrícula</Label><Input value={userForm.matricula} onChange={(e) => setUserForm({ ...userForm, matricula: e.target.value })} placeholder="EST-2025-001" /></div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Sede</Label>
+                      <Select value={userForm.sede} onValueChange={(v) => setUserForm({ ...userForm, sede: v })}>
+                        <SelectTrigger><SelectValue placeholder="Seleccione sede" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="central">Sede Central – El Alto</SelectItem>
+                          <SelectItem value="viacha">Sede Viacha</SelectItem>
+                          <SelectItem value="desaguadero">Sede Desaguadero</SelectItem>
+                          <SelectItem value="copacabana">Sede Copacabana</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
                 ) : (
                   <div className="space-y-2"><Label>CI</Label><Input value={userForm.documentNumber} onChange={(e) => setUserForm({ ...userForm, documentNumber: e.target.value })} placeholder="12345678" /></div>
                 )}
