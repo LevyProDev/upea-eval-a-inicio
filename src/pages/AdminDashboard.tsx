@@ -110,7 +110,7 @@ const AdminDashboard = () => {
   const [careerForm, setCareerForm] = useState({ name: "", code: "", faculty: "" });
   const [subjectForm, setSubjectForm] = useState({ name: "", code: "", semester: "", career_id: "" });
   const [userForm, setUserForm] = useState({
-    role: "", firstName: "", lastName: "", documentNumber: "", email: "", phone: "", password: "",
+    role: "", firstName: "", lastNamePaterno: "", lastNameMaterno: "", documentNumber: "", matricula: "", email: "", phone: "", password: "",
     career: "", sede: "", semester: "", academicDegree: "", profession: "", subjects: "",
     period: "", area: "", accessLevel: "",
   });
