@@ -382,7 +382,7 @@ const AdminDashboard = () => {
                     <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> Gestión de Usuarios</CardTitle>
                     <CardDescription>Crear usuarios con roles: Estudiante, Docente, Director, Administrador</CardDescription>
                   </div>
-                  <Button onClick={() => { setUserForm({ role: "", firstName: "", lastName: "", documentNumber: "", email: "", phone: "", password: "", career: "", sede: "", semester: "", academicDegree: "", profession: "", subjects: "", period: "", area: "", accessLevel: "" }); setShowUserDialog(true); }}>
+                  <Button onClick={() => { setUserForm({ role: "", firstName: "", lastNamePaterno: "", lastNameMaterno: "", documentNumber: "", matricula: "", email: "", phone: "", password: "", career: "", sede: "", semester: "", academicDegree: "", profession: "", subjects: "", period: "", area: "", accessLevel: "" }); setShowUserDialog(true); }}>
                     <Plus className="h-4 w-4 mr-1" /> Nuevo Usuario
                   </Button>
                 </div>
