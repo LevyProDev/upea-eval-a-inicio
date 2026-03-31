@@ -254,9 +254,9 @@ const AdminDashboard = () => {
 
   // ── User creation (demo) ──
   const handleCreateUser = () => {
-    toast({ title: "Usuario creado (simulado)", description: `Se creó el usuario ${userForm.firstName} ${userForm.lastName} con rol ${userForm.role}.` });
+    toast({ title: "Usuario creado (simulado)", description: `Se creó el usuario ${userForm.firstName} ${userForm.lastNamePaterno} ${userForm.lastNameMaterno} con rol ${userForm.role}.` });
     setShowUserDialog(false);
-    setUserForm({ role: "", firstName: "", lastName: "", documentNumber: "", email: "", phone: "", password: "", career: "", sede: "", semester: "", academicDegree: "", profession: "", subjects: "", period: "", area: "", accessLevel: "" });
+    setUserForm({ role: "", firstName: "", lastNamePaterno: "", lastNameMaterno: "", documentNumber: "", matricula: "", email: "", phone: "", password: "", career: "", sede: "", semester: "", academicDegree: "", profession: "", subjects: "", period: "", area: "", accessLevel: "" });
   };
 
   // ── Evaluation config ──
