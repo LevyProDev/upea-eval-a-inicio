@@ -771,33 +771,30 @@ const AdminDashboard = () => {
             </div>
             {userForm.role && (
               <>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-2"><Label>Nombre</Label><Input value={userForm.firstName} onChange={(e) => setUserForm({ ...userForm, firstName: e.target.value })} /></div>
-                  <div className="space-y-2"><Label>Apellidos</Label><Input value={userForm.lastName} onChange={(e) => setUserForm({ ...userForm, lastName: e.target.value })} /></div>
+                  <div className="space-y-2"><Label>Apellido Paterno</Label><Input value={userForm.lastNamePaterno} onChange={(e) => setUserForm({ ...userForm, lastNamePaterno: e.target.value })} /></div>
+                  <div className="space-y-2"><Label>Apellido Materno</Label><Input value={userForm.lastNameMaterno} onChange={(e) => setUserForm({ ...userForm, lastNameMaterno: e.target.value })} /></div>
                 </div>
-                <div className="space-y-2"><Label>CI / Matrícula</Label><Input value={userForm.documentNumber} onChange={(e) => setUserForm({ ...userForm, documentNumber: e.target.value })} /></div>
+
+                {userForm.role === "student" ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2"><Label>CI</Label><Input value={userForm.documentNumber} onChange={(e) => setUserForm({ ...userForm, documentNumber: e.target.value })} placeholder="12345678" /></div>
+                    <div className="space-y-2"><Label>Matrícula</Label><Input value={userForm.matricula} onChange={(e) => setUserForm({ ...userForm, matricula: e.target.value })} placeholder="EST-2025-001" /></div>
+                  </div>
+                ) : (
+                  <div className="space-y-2"><Label>CI</Label><Input value={userForm.documentNumber} onChange={(e) => setUserForm({ ...userForm, documentNumber: e.target.value })} placeholder="12345678" /></div>
+                )}
+
                 <div className="space-y-2"><Label>Correo electrónico</Label><Input type="email" value={userForm.email} onChange={(e) => setUserForm({ ...userForm, email: e.target.value })} /></div>
                 <div className="space-y-2"><Label>Teléfono</Label><Input value={userForm.phone} onChange={(e) => setUserForm({ ...userForm, phone: e.target.value })} /></div>
                 <div className="space-y-2"><Label>Contraseña</Label><Input type="password" value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} /></div>
 
-                {userForm.role === "student" && (
-                  <>
-                    <div className="space-y-2"><Label>Carrera</Label><Input value={userForm.career} onChange={(e) => setUserForm({ ...userForm, career: e.target.value })} placeholder="Ciencias de la Educación" /></div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2"><Label>Sede</Label><Input value={userForm.sede} onChange={(e) => setUserForm({ ...userForm, sede: e.target.value })} placeholder="El Alto" /></div>
-                      <div className="space-y-2"><Label>Semestre</Label><Input value={userForm.semester} onChange={(e) => setUserForm({ ...userForm, semester: e.target.value })} placeholder="5" /></div>
-                    </div>
-                  </>
-                )}
                 {userForm.role === "teacher" && (
-                  <>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2"><Label>Grado académico</Label><Input value={userForm.academicDegree} onChange={(e) => setUserForm({ ...userForm, academicDegree: e.target.value })} placeholder="Maestría" /></div>
-                      <div className="space-y-2"><Label>Profesión</Label><Input value={userForm.profession} onChange={(e) => setUserForm({ ...userForm, profession: e.target.value })} placeholder="Lic. en Educación" /></div>
-                    </div>
-                    <div className="space-y-2"><Label>Carrera</Label><Input value={userForm.career} onChange={(e) => setUserForm({ ...userForm, career: e.target.value })} placeholder="Ciencias de la Educación" /></div>
-                    <div className="space-y-2"><Label>Materias que dicta</Label><Input value={userForm.subjects} onChange={(e) => setUserForm({ ...userForm, subjects: e.target.value })} placeholder="Psicología Educativa, Didáctica" /></div>
-                  </>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2"><Label>Grado académico</Label><Input value={userForm.academicDegree} onChange={(e) => setUserForm({ ...userForm, academicDegree: e.target.value })} placeholder="Maestría" /></div>
+                    <div className="space-y-2"><Label>Profesión</Label><Input value={userForm.profession} onChange={(e) => setUserForm({ ...userForm, profession: e.target.value })} placeholder="Lic. en Educación" /></div>
+                  </div>
                 )}
                 {userForm.role === "director" && (
                   <>
@@ -807,19 +804,7 @@ const AdminDashboard = () => {
                   </>
                 )}
                 {userForm.role === "admin" && (
-                  <>
-                    <div className="space-y-2"><Label>Área de responsabilidad</Label><Input value={userForm.area} onChange={(e) => setUserForm({ ...userForm, area: e.target.value })} placeholder="Sistemas" /></div>
-                    <div className="space-y-2">
-                      <Label>Nivel de acceso</Label>
-                      <Select value={userForm.accessLevel} onValueChange={(v) => setUserForm({ ...userForm, accessLevel: v })}>
-                        <SelectTrigger><SelectValue placeholder="Seleccione nivel" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="full">Acceso completo</SelectItem>
-                          <SelectItem value="limited">Acceso limitado</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </>
+                  <div className="space-y-2"><Label>Área de responsabilidad</Label><Input value={userForm.area} onChange={(e) => setUserForm({ ...userForm, area: e.target.value })} placeholder="Sistemas" /></div>
                 )}
               </>
             )}
