@@ -573,11 +573,6 @@ const TeacherDashboard = () => {
           </Card>
         </div>
 
-        {/* Blockchain Verification */}
-        <div className="mb-6">
-          <BlockchainVerificationButton />
-        </div>
-
         {/* Main Content */}
         <Tabs defaultValue="subjects" className="space-y-4">
           <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">

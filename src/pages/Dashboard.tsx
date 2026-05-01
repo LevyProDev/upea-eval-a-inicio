@@ -344,11 +344,6 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Blockchain Verification */}
-        <div className="mb-8">
-          <BlockchainVerificationButton />
-        </div>
-
         {/* Subjects Section */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-4">
