@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { GraduationCap, LogIn, UserPlus } from "lucide-react";
 import RegisterModal from "@/components/RegisterModal";
+import BlockchainVerificationButton from "@/components/BlockchainVerificationButton";
 
 const Index = () => {
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
@@ -147,6 +148,11 @@ const Index = () => {
                 Tu opinión contribuye a la excelencia académica
               </p>
             </div>
+          </div>
+
+          {/* Blockchain Verification */}
+          <div className="mt-10 flex justify-center">
+            <BlockchainVerificationButton />
           </div>
         </div>
       </main>
