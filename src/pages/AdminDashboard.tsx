@@ -362,6 +362,11 @@ const AdminDashboard = () => {
           ))}
         </div>
 
+        {/* Blockchain Verification */}
+        <div className="mb-6">
+          <BlockchainVerificationButton />
+        </div>
+
         {/* Tabs */}
         <Tabs defaultValue="users" className="space-y-4">
           <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 lg:w-auto lg:inline-grid">
