@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import BlockchainVerificationButton from "@/components/BlockchainVerificationButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useRoleGuard } from "@/hooks/useRoleGuard";
 import { supabase } from "@/integrations/supabase/client";
