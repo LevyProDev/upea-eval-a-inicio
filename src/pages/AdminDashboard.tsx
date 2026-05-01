@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import BlockchainVerificationButton from "@/components/BlockchainVerificationButton";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useRoleGuard } from "@/hooks/useRoleGuard";
@@ -360,6 +361,11 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           ))}
+        </div>
+
+        {/* Blockchain Verification */}
+        <div className="mb-6">
+          <BlockchainVerificationButton />
         </div>
 
         {/* Tabs */}
